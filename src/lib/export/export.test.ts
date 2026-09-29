@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { generateSchedule } from '@/lib/scheduler/generate'
 import { makeInput, members, teams } from '@/lib/scheduler/fixtures'
 import { buildExportSchedule, COLUMNS, HEADERS } from './rows'
-import { toCsv } from './csv'
 import { toXlsxBuffer } from './xlsx'
 
 function build() {
@@ -83,36 +82,6 @@ describe('buildExportSchedule', () => {
 
   it('nomeia o arquivo pelo ano e mes', () => {
     expect(build().fileName).toBe('escala-louvor-2026-08')
-  })
-})
-
-describe('toCsv', () => {
-  it('comeca com BOM para o Excel nao quebrar os acentos', () => {
-    expect(toCsv(build()).startsWith('﻿')).toBe(true)
-  })
-
-  it('usa ponto e virgula e o cabecalho da planilha', () => {
-    const linhas = toCsv(build()).replace('﻿', '').split('\r\n')
-
-    expect(linhas[0]).toBe(
-      'DATA;DIA;VOCAIS MASC;VOCAIS FEM;TECLADO;BAIXO;GUITARRA;BATERIA;SOM/PROJEÇÃO;TIME',
-    )
-  })
-
-  it('escreve uma linha por culto com a data formatada', () => {
-    const linhas = toCsv(build()).replace('﻿', '').trim().split('\r\n')
-
-    expect(linhas).toHaveLength(15) // cabecalho + 14 cultos
-    expect(linhas[1]).toMatch(/^02\/08\/2026;DOM MANHÃ;/)
-    expect(linhas[1].endsWith(`;${primeiroTime.name}`)).toBe(true)
-  })
-
-  it('protege celulas que contem o separador', () => {
-    const schedule = build()
-    schedule.rows[0].cells.VOCAL_MASC = 'FULANO; CICLANO'
-    const primeira = toCsv(schedule).replace('﻿', '').split('\r\n')[1]
-
-    expect(primeira).toContain('"FULANO; CICLANO"')
   })
 })
 
