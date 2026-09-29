@@ -48,9 +48,9 @@
     "eslint-config-next": "15.5.25",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^5",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.2"
   },
   "pnpm": {
     "overrides": {
