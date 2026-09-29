@@ -1,103 +1,260 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { CalendarDays, Download, Table2, TriangleAlert } from 'lucide-react'
+import {
+  COLUMNS,
+  ROLES,
+  SERVICE_LABELS,
+  type Role,
+} from '@/lib/domain/types'
+import { buttonVariants } from '@/components/ui/button'
+import { DeleteScheduleButton } from '@/components/delete-schedule-button'
+import { GenerateButton } from '@/components/generate-button'
+import { MonthPicker } from '@/components/month-picker'
+import { monthLabel } from '@/lib/domain/months'
+import { PageBar } from '@/components/page-bar'
+import { ScheduleTable, type TableRow } from '@/components/schedule-table'
+import { HEADERS } from '@/lib/export/rows'
+import { formatDate, dateKey } from '@/lib/scheduler/serviceDays'
+import { ExceptionsPanel } from '@/components/exceptions-panel'
+import { buildServiceDays } from '@/lib/scheduler/serviceDays'
+import {
+  listExceptions,
+  loadMembers,
+  loadSchedule,
+  loadTeams,
+  loadUnavailable,
+} from '@/server/queries'
+import { cn } from '@/lib/utils'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+function currentMonth() {
+  const now = new Date()
+  return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 }
+}
+
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; month?: string }>
+}) {
+  const params = await searchParams
+  const fallback = currentMonth()
+  const year = Number(params.year) || fallback.year
+  const month = Number(params.month) || fallback.month
+
+  const [stored, teams, members, unavailable, exceptions] = await Promise.all([
+    loadSchedule(year, month),
+    loadTeams(),
+    loadMembers(),
+    loadUnavailable(year, month),
+    listExceptions(year, month),
+  ])
+
+  const nameById = new Map(members.map((m) => [m.id, m.name]))
+  const teamById = new Map(teams.map((t) => [t.id, t]))
+
+  const roster = Object.fromEntries(
+    ROLES.map((role) => [
+      role,
+      members
+        .filter((m) => m.active && m.roles.includes(role))
+        .map((m) => ({ id: m.id, name: m.name })),
+    ]),
+  ) as Record<Role, Array<{ id: string; name: string }>>
+
+  const rows: TableRow[] = (stored?.entries ?? []).map((entry) => {
+    const team = entry.teamId ? teamById.get(entry.teamId) : undefined
+
+    return {
+      entryId: entry.id,
+      date: formatDate(entry.date),
+      dateKey: dateKey(entry.date),
+      day: SERVICE_LABELS[entry.service],
+      teamName: team?.name ?? '',
+      teamColor: team?.color ?? '#FFFFFF',
+      locked: entry.locked,
+      exception: !!entry.exception,
+      cells: COLUMNS.map((column) => ({
+        key: column.key,
+        roles: [...column.roles],
+        items: column.roles.flatMap((role) =>
+          entry.assignments
+            .filter((a) => a.role === role)
+            .map((a) => ({
+              role,
+              assignmentId: a.id,
+              memberId: a.memberId,
+              name: a.memberId ? (nameById.get(a.memberId) ?? '') : '',
+              isGestor: a.isGestor,
+              locked: a.locked,
+            })),
+        ),
+      })),
+    }
+  })
+
+  const vagas = rows.reduce(
+    (total, row) =>
+      total + row.cells.flatMap((c) => c.items).filter((i) => !i.memberId).length,
+    0,
+  )
+  const semGestor = rows.filter(
+    (row) => !row.exception && !row.cells.some((c) => c.items.some((i) => i.isGestor)),
+  ).length
+  const temEscala = rows.length > 0
+
+  const exportHref = `/api/export?year=${year}&month=${month}&format=xlsx`
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div>
+      <PageBar icon={CalendarDays} title="Escala">
+        <MonthPicker year={year} month={month} />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <span className="hidden h-6 w-px bg-border sm:block" />
+
+        <GenerateButton year={year} month={month} hasSchedule={temEscala} />
+
+        {temEscala && (
+          <>
+            <a href={exportHref} className={cn(buttonVariants({ variant: 'outline' }))}>
+              <Download />
+              Baixar .xlsx
+            </a>
+            <DeleteScheduleButton
+              year={year}
+              month={month}
+              label={monthLabel(year, month)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </>
+        )}
+      </PageBar>
+
+      {temEscala && (
+        <div className="mb-6 grid gap-2.5 rounded-2xl bg-tray p-2.5 sm:grid-cols-3">
+          <Stat label="Cultos no mês" value={rows.length} />
+          <Stat label="Times no rodízio" value={new Set(rows.map((r) => r.teamName)).size} />
+          <Stat
+            label="Vagas em aberto"
+            value={vagas}
+            hint={semGestor > 0 ? `${semGestor} sem gestor` : undefined}
+            alerta={vagas > 0 || semGestor > 0}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {(vagas > 0 || semGestor > 0) && (
+        <p className="mb-6 flex items-start gap-2.5 rounded-xl bg-destructive/8 px-4 py-3 text-sm">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+          <span>
+            {vagas > 0 && (
+              <>
+                {vagas} {vagas === 1 ? 'vaga ficou' : 'vagas ficaram'} em aberto
+                {semGestor > 0 && ' · '}
+              </>
+            )}
+            {semGestor > 0 && (
+              <>
+                {semGestor} {semGestor === 1 ? 'culto está' : 'cultos estão'} sem gestor
+              </>
+            )}
+            . Clique na célula para escolher alguém.
+          </span>
+        </p>
+      )}
+
+      <ExceptionsPanel
+        exceptions={exceptions.map((e) => ({
+          id: e.id,
+          dateKey: dateKey(e.date),
+          date: formatDate(e.date),
+          kind: e.kind,
+          label: e.label,
+        }))}
+        days={buildServiceDays(year, month).map((d) => ({
+          dateKey: dateKey(d.date),
+          label: `${formatDate(d.date)} - ${d.services.length > 1 ? 'DOMINGO' : 'QUARTA'}`,
+        }))}
+      />
+
+      <section className="rounded-2xl border border-border">
+        <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+          <h2 className="flex items-center gap-2.5 text-[15px] font-semibold">
+            <Table2 className="size-[18px] text-faint" />
+            Escala de {monthLabel(year, month)}
+          </h2>
+
+          <p className="text-xs text-faint">
+            Preview da planilha — o .xlsx sai com estas cores e estas colunas.
+          </p>
+        </header>
+
+        <div className="border-t border-border px-4 py-4 sm:px-5 sm:py-5">
+          {temEscala ? (
+            /* A tabela e o preview fiel do .xlsx: bordas pretas, cabecalho lilas e
+               o fundo de cada linha na cor do time. O visual dela nao muda — o que
+               sai aqui precisa sair igual na planilha baixada. */
+            <ScheduleTable
+              headers={HEADERS}
+              rows={rows}
+              roster={roster}
+              unavailable={[...unavailable]}
+            />
+          ) : (
+            <div className="max-w-md py-6">
+              <p className="text-sm">
+                Ainda não existe escala para {monthLabel(year, month)}.
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {teams.length === 0 ? (
+                  <>
+                    Antes disso,{' '}
+                    <Link href="/times" className="underline underline-offset-4">
+                      monte os times
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    Vale conferir a{' '}
+                    <Link href="/disponibilidade" className="underline underline-offset-4">
+                      disponibilidade do mês
+                    </Link>{' '}
+                    antes de gerar.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
-  );
+  )
+}
+
+function Stat({
+  label,
+  value,
+  hint,
+  alerta,
+}: {
+  label: string
+  value: number
+  hint?: string
+  alerta?: boolean
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-4 py-3.5">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          'display tabular mt-1 text-[28px]',
+          alerta ? 'text-destructive' : 'text-foreground',
+        )}
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-0.5 text-xs text-destructive">{hint}</p>}
+    </div>
+  )
 }

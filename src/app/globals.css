@@ -1,26 +1,162 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-faint: var(--faint);
+  --color-rule-strong: var(--rule-strong);
+  --color-tray: var(--tray);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Fundo cinza com o conteudo num painel branco arredondado por cima — as
+     unicas cores saturadas continuam sendo as dos times, que vem do banco e
+     precisam sair identicas no .xlsx. */
+  --background: #edf0f4;
+  --foreground: #15171c;
+  --card: #ffffff;
+  --card-foreground: #15171c;
+  --popover: #ffffff;
+  --popover-foreground: #15171c;
+  --primary: #15171c;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f6f9;
+  --secondary-foreground: #15171c;
+  --muted: #f4f6f9;
+  --muted-foreground: #5c6270;
+  --accent: #f4f6f9;
+  --accent-foreground: #15171c;
+  --destructive: #b03a26;
+  --border: #e5e9ef;
+  --input: #dfe4ec;
+  --ring: #15171c;
+  --radius: 0.625rem;
+
+  /* Fora da paleta shadcn: o cinza mais claro que ainda passa em contraste, a
+     regua forte que separa blocos e a bandeja onde os cards descansam. */
+  --faint: #8b93a1;
+  --rule-strong: #cfd5df;
+  --tray: #f4f6f9;
+
+  --sidebar: #edf0f4;
+  --sidebar-foreground: #15171c;
+  --sidebar-primary: #15171c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f6f9;
+  --sidebar-accent-foreground: #15171c;
+  --sidebar-border: #e5e9ef;
+  --sidebar-ring: #15171c;
+}
+
+.dark {
+  --background: #101216;
+  --foreground: #f2f4f7;
+  --card: #171a20;
+  --card-foreground: #f2f4f7;
+  --popover: #171a20;
+  --popover-foreground: #f2f4f7;
+  --primary: #f2f4f7;
+  --primary-foreground: #15171c;
+  --secondary: #22262e;
+  --secondary-foreground: #f2f4f7;
+  --muted: #22262e;
+  --muted-foreground: #9aa1ae;
+  --accent: #22262e;
+  --accent-foreground: #f2f4f7;
+  --destructive: #e0664c;
+  --border: #272b33;
+  --input: #333843;
+  --ring: #9aa1ae;
+  --faint: #6f7684;
+  --rule-strong: #333843;
+  --tray: #1b1f26;
+  --sidebar: #171a20;
+  --sidebar-foreground: #f2f4f7;
+  --sidebar-primary: #f2f4f7;
+  --sidebar-primary-foreground: #15171c;
+  --sidebar-accent: #22262e;
+  --sidebar-accent-foreground: #f2f4f7;
+  --sidebar-border: #272b33;
+  --sidebar-ring: #9aa1ae;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  /* Datas e numeros alinhados em coluna. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* O nome do mes e os titulos de tela. Uma familia so (Archivo variavel),
+     puxada para o extremo estreito e pesado do eixo de largura — e o unico
+     lugar onde a tipografia levanta a voz. */
+  .display {
+    font-stretch: 78%;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+  }
+
+  /* Rotulo de dado: nome de instrumento, cabecalho de coluna. Nao e enfeite,
+     e o mesmo texto que sai na planilha. */
+  .rotulo {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
 }
