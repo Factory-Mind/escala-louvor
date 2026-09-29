@@ -67,7 +67,7 @@ gestor por culto, as travas, a reprodutibilidade por seed e a formatação do
 | Caminho | O que é |
 |---|---|
 | `src/lib/scheduler/` | O gerador. Funções puras, sem banco — é onde os testes vivem. |
-| `src/lib/export/` | Converte a escala em `.xlsx` colorido e `.csv`. |
+| `src/lib/export/` | Converte a escala em `.xlsx` colorido. |
 | `src/server/queries.ts` | Leitura do banco no formato que o gerador espera. |
 | `src/app/*/actions.ts` | Server actions de cada tela. |
 | `prisma/seed.ts` | Integrantes, cores dos times e formação inicial. |
