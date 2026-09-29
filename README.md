@@ -40,12 +40,14 @@ já fica travada, e o cadeado na ponta direita trava a linha inteira. Ao clicar 
 
 ```bash
 pnpm install
-pnpm prisma migrate dev   # cria prisma/dev.db
+vercel env pull .env.local   # traz a DATABASE_URL do Neon
+node node_modules/prisma/build/index.js migrate deploy --config prisma7.config.ts
 pnpm db:seed              # popula integrantes e times
 pnpm dev                  # http://localhost:3000
 ```
 
-Para zerar o banco e repopular do começo: `pnpm db:reset`.
+O banco é um Postgres no Neon. As migrations usam `DATABASE_URL_UNPOOLED` e o app usa
+`DATABASE_URL` (com pool). O `pnpm db:seed` é idempotente e pode ser rodado de novo.
 
 ## Testes
 
@@ -72,12 +74,10 @@ gestor por culto, as travas, a reprodutibilidade por seed e a formatação do
 
 ## Notas técnicas
 
-- **SQLite não tem `enum` no Prisma.** `role` e `service` são `String` no banco;
-  os tipos reais estão em `src/lib/domain/types.ts` e são validados com zod na
-  borda.
+- **`role` e `service` são `String` no banco**; os tipos reais estão em
+  `src/lib/domain/types.ts` e são validados com zod na borda.
 - **A exportação usa `exceljs`**, não `xlsx`/SheetJS: a versão community do
   SheetJS não escreve estilo de célula, e sem isso não há como reproduzir as cores.
 - **Datas são sempre UTC à meia-noite**, para o dia não escorregar por fuso.
-- **Prisma 7 exige driver adapter**: `@prisma/adapter-better-sqlite3`, configurado
-  em `src/lib/db.ts`. `better-sqlite3` tem binário nativo e está em
-  `serverExternalPackages` no `next.config.ts`.
+- **Prisma 7 exige driver adapter**: `@prisma/adapter-pg`, configurado em
+  `src/lib/db.ts`.
