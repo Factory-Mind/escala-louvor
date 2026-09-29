@@ -1,0 +1,59 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.18.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Audit dependencies
+        env:
+          REPORT: ${{ runner.temp }}/audit.json
+        run: |
+          set -euo pipefail
+
+          status=0
+          pnpm audit --json > "$REPORT" || status=$?
+
+          counts=$(jq -c '.metadata.vulnerabilities // empty' "$REPORT")
+          if [ -z "$counts" ]; then
+            echo "::error::pnpm audit emitted no summary (exit ${status}); failing closed"
+            cat "$REPORT"
+            exit 1
+          fi
+
+          echo "Advisories by severity: ${counts}"
+
+          blocking=$(jq -r '(.high // 0) + (.critical // 0)' <<<"$counts")
+          if [ "$blocking" -gt 0 ]; then
+            jq -r '.advisories[] | select(.severity == "high" or .severity == "critical")
+                   | "  [\(.severity)] \(.module_name) \(.vulnerable_versions) — \(.title)"' "$REPORT" | sort -u
+            echo "::error::${blocking} high/critical advisories found"
+            exit 1
+          fi
+
+          below=$(jq -r '(.info // 0) + (.low // 0) + (.moderate // 0)' <<<"$counts")
+          if [ "$below" -gt 0 ]; then
+            echo "::warning::${below} advisories below the high threshold; reported, not blocking"
+          fi
