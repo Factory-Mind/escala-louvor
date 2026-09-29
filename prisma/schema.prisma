@@ -1,0 +1,123 @@
+// Escala de Louvor — schema
+//
+// NOTA: o provider `sqlite` do Prisma nao suporta `enum`. Os campos `role` e
+// `service` sao String; o tipo real vive em src/lib/domain/types.ts e e
+// validado com zod na borda (server actions).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Member {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  active           Boolean  @default(true)
+  isGestor         Boolean  @default(false)
+  isMinistro       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  roles            MemberRole[]
+  unavailabilities Unavailability[]
+  assignments      ScheduleAssignment[]
+}
+
+model MemberRole {
+  id       String @id @default(cuid())
+  memberId String
+  role     String
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, role])
+  @@index([role])
+}
+
+/// Nao tem gente fixa: e so o rotulo e a cor que a linha recebe na planilha,
+/// girando de um dia de culto para o outro.
+model Team {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  color  String
+  order  Int     @unique
+  active Boolean @default(true)
+
+  entries ScheduleEntry[]
+}
+
+/// Quantas pessoas cada posicao leva em cada culto. Vale para todos os times.
+model Formation {
+  role  String @id
+  count Int
+}
+
+model Unavailability {
+  id       String   @id @default(cuid())
+  memberId String
+  date     DateTime
+  note     String?
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@index([date])
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  year      Int
+  month     Int
+  seed      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries ScheduleEntry[]
+
+  @@unique([year, month])
+}
+
+model ScheduleEntry {
+  id         String   @id @default(cuid())
+  scheduleId String
+  date       DateTime
+  service    String
+  teamId     String?
+  locked     Boolean  @default(false)
+  order      Int
+  exceptionKind  String?
+  exceptionLabel String?
+
+  schedule    Schedule             @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  team        Team?                @relation(fields: [teamId], references: [id])
+  assignments ScheduleAssignment[]
+
+  @@unique([scheduleId, order])
+}
+
+model ScheduleAssignment {
+  id       String  @id @default(cuid())
+  entryId  String
+  role     String
+  position Int
+  memberId String?
+  isGestor Boolean @default(false)
+  locked   Boolean @default(false)
+
+  entry  ScheduleEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  member Member?       @relation(fields: [memberId], references: [id])
+
+  @@unique([entryId, role, position])
+}
+
+/// Dia de culto em que o time da rotacao nao serve: fica em aberto ou vem
+/// alguem de fora. A escala guarda a linha sem escalacao.
+model ServiceException {
+  id    String   @id @default(cuid())
+  date  DateTime @unique
+  kind  String
+  label String?
+}
