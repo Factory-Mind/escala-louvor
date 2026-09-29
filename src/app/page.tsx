@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { CalendarDays, Download, Table2, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Table2, TriangleAlert } from 'lucide-react'
 import {
   COLUMNS,
   ROLES,
   SERVICE_LABELS,
   type Role,
 } from '@/lib/domain/types'
-import { buttonVariants } from '@/components/ui/button'
+import { DownloadButton } from '@/components/download-button'
 import { DeleteScheduleButton } from '@/components/delete-schedule-button'
 import { GenerateButton } from '@/components/generate-button'
 import { MonthPicker } from '@/components/month-picker'
@@ -104,8 +104,6 @@ export default async function SchedulePage({
   ).length
   const temEscala = rows.length > 0
 
-  const exportHref = `/api/export?year=${year}&month=${month}&format=xlsx`
-
   return (
     <div>
       <PageBar icon={CalendarDays} title="Escala">
@@ -117,10 +115,7 @@ export default async function SchedulePage({
 
         {temEscala && (
           <>
-            <a href={exportHref} className={cn(buttonVariants({ variant: 'outline' }))}>
-              <Download />
-              Baixar .xlsx
-            </a>
+            <DownloadButton year={year} month={month} />
             <DeleteScheduleButton
               year={year}
               month={month}
