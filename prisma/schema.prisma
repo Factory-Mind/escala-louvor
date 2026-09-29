@@ -1,8 +1,7 @@
 // Escala de Louvor — schema
 //
-// NOTA: o provider `sqlite` do Prisma nao suporta `enum`. Os campos `role` e
-// `service` sao String; o tipo real vive em src/lib/domain/types.ts e e
-// validado com zod na borda (server actions).
+// Os campos `role` e `service` sao String; o tipo real vive em
+// src/lib/domain/types.ts e e validado com zod na borda (server actions).
 
 generator client {
   provider = "prisma-client"
@@ -10,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Member {
