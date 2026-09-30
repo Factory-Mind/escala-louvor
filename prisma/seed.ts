@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../src/generated/prisma/client'
 import type { ExceptionKind, Role } from '../src/lib/domain/types'
+import { withVerifyFull } from '../src/lib/connectionString'
 
 config({ path: '.env.local', quiet: true })
 config({ quiet: true })
@@ -83,7 +84,7 @@ const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABA
 
 if (!connectionString) throw new Error('DATABASE_URL nao configurada.')
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: withVerifyFull(connectionString) }) })
 
 async function main() {
   for (const spec of MEMBERS) {

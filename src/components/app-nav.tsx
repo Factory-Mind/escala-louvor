@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, CalendarX2, Palette, Users } from 'lucide-react'
+import { CalendarDays, CalendarX2, LogOut, Palette, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { logoutAction } from '@/app/login/actions'
 
 const LINKS = [
   {
@@ -42,10 +43,12 @@ const LINKS = [
 export function AppNav() {
   const pathname = usePathname()
 
+  if (pathname === '/login') return null
+
   return (
     <nav
       aria-label="Seções"
-      className="shrink-0 px-2 py-2 md:flex md:w-[68px] md:flex-col md:items-center md:px-0 md:py-4"
+      className="flex shrink-0 items-center gap-1 px-2 py-2 md:w-[68px] md:gap-0 md:flex-col md:items-center md:px-0 md:py-4"
     >
       <Link
         href="/"
@@ -55,7 +58,7 @@ export function AppNav() {
         EL
       </Link>
 
-      <ul className="flex gap-1 overflow-x-auto md:flex-col md:gap-1.5 md:overflow-visible">
+      <ul className="flex min-w-0 flex-1 gap-1 overflow-x-auto md:flex-none md:flex-col md:gap-1.5 md:overflow-visible">
         {LINKS.map(({ href, label, description, icon: Icon }) => {
           const active = pathname === href
 
@@ -89,6 +92,21 @@ export function AppNav() {
           )
         })}
       </ul>
+
+      <form action={logoutAction} className="md:mt-4 md:border-t md:border-border md:pt-4">
+        <Tooltip>
+          <TooltipTrigger
+            render={<button type="submit" />}
+            aria-label="Sair"
+            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:size-10"
+          >
+            <LogOut className="size-[18px]" />
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8} className="hidden md:flex">
+            Sair
+          </TooltipContent>
+        </Tooltip>
+      </form>
     </nav>
   )
 }
