@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </TooltipProvider>
         <Toaster position="bottom-right" />
-        {role !== 'admin' && <Analytics />}
+        <Analytics />
       </body>
     </html>
   )
