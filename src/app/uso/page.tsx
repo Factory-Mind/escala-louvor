@@ -143,7 +143,7 @@ export default async function UsagePage({
                   className="flex h-full flex-col items-center justify-end gap-1 md:gap-1.5"
                 >
                   <span className="tabular text-[11px] text-muted-foreground md:text-xs">
-                    {totalMes > 0 ? counts.LOGIN : ''}
+                    {totalMes > 0 ? totalMes : ''}
                   </span>
                   <div className="flex h-[120px] items-end gap-[3px] md:h-[180px] md:gap-1">
                     {USAGE_TYPES.map((type) => (

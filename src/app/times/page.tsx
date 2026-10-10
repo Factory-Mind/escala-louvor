@@ -64,7 +64,10 @@ export default async function TeamsPage() {
   ) as Record<Role, number>
 
   const agora = new Date()
-  const dias = buildServiceDays(agora.getUTCFullYear(), agora.getUTCMonth() + 1).length
+  const cultos = buildServiceDays(agora.getUTCFullYear(), agora.getUTCMonth() + 1).reduce(
+    (total, dia) => total + dia.services.length,
+    0,
+  )
 
   const rodizio = proximasSemanas(teams, new Map(rows.map((r) => [r.id, r.order])))
 
@@ -89,7 +92,7 @@ export default async function TeamsPage() {
             </span>
           </div>
 
-          <FormationEditor formation={formation} people={people} dias={dias} />
+          <FormationEditor formation={formation} people={people} dias={cultos} />
         </section>
 
         <section className="overflow-hidden rounded-card border border-border bg-card">
