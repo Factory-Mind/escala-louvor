@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { roleSchema } from '@/lib/domain/types'
 import { generateSchedule, type GeneratedEntry } from '@/lib/scheduler/generate'
 import { randomSeed } from '@/lib/scheduler/rng'
+import { recordEvent } from '@/server/events'
 import {
   loadExceptions,
   loadFormation,
@@ -69,6 +70,7 @@ export async function generateScheduleAction(
   })
 
   await persist(input.year, input.month, seed, entries)
+  await recordEvent('SCHEDULE_GENERATED', input)
   revalidatePath('/')
 
   return {

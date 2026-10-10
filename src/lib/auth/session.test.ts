@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { NextRequest } from 'next/server'
-import { SESSION_COOKIE, isValidSession, safeEqual, safeNext, sessionToken } from './session'
+import { SESSION_COOKIE, getSessionRole, isValidSession, safeEqual, safeNext, sessionToken } from './session'
 import { middleware } from '@/middleware'
 
 describe('sessionToken', () => {
@@ -29,6 +29,42 @@ describe('isValidSession', () => {
   })
 })
 
+describe('getSessionRole', () => {
+  const original = { app: process.env.APP_PASSWORD, admin: process.env.ADMIN_PASSWORD }
+
+  beforeEach(() => {
+    process.env.APP_PASSWORD = 's3nha'
+    process.env.ADMIN_PASSWORD = 'adm1n'
+  })
+
+  afterEach(() => {
+    process.env.APP_PASSWORD = original.app
+    process.env.ADMIN_PASSWORD = original.admin
+  })
+
+  it('distingue admin de membro', async () => {
+    expect(await getSessionRole(await sessionToken('adm1n'))).toBe('admin')
+    expect(await getSessionRole(await sessionToken('s3nha'))).toBe('member')
+  })
+
+  it('recusa cookie ausente ou forjado', async () => {
+    expect(await getSessionRole(undefined)).toBeNull()
+    expect(await getSessionRole('adm1n')).toBeNull()
+    expect(await getSessionRole(await sessionToken('outra'))).toBeNull()
+  })
+
+  it('nunca devolve admin sem ADMIN_PASSWORD', async () => {
+    delete process.env.ADMIN_PASSWORD
+    expect(await getSessionRole(await sessionToken('adm1n'))).toBeNull()
+    expect(await getSessionRole(await sessionToken('s3nha'))).toBe('member')
+  })
+
+  it('ignora ADMIN_PASSWORD igual à APP_PASSWORD', async () => {
+    process.env.ADMIN_PASSWORD = 's3nha'
+    expect(await getSessionRole(await sessionToken('s3nha'))).toBe('member')
+  })
+})
+
 describe('safeNext', () => {
   it('só aceita caminhos internos', () => {
     expect(safeNext('/integrantes?x=1')).toBe('/integrantes?x=1')
@@ -52,14 +88,16 @@ describe('safeNext', () => {
 })
 
 describe('middleware', () => {
-  const original = process.env.APP_PASSWORD
+  const original = { app: process.env.APP_PASSWORD, admin: process.env.ADMIN_PASSWORD }
 
   beforeEach(() => {
     process.env.APP_PASSWORD = 's3nha'
+    process.env.ADMIN_PASSWORD = 'adm1n'
   })
 
   afterEach(() => {
-    process.env.APP_PASSWORD = original
+    process.env.APP_PASSWORD = original.app
+    process.env.ADMIN_PASSWORD = original.admin
   })
 
   const request = (path: string, init: { method?: string; cookie?: string } = {}) =>
@@ -84,6 +122,17 @@ describe('middleware', () => {
   it('deixa passar com sessão válida', async () => {
     const res = await middleware(request('/api/export?year=2026&month=9', { cookie: await sessionToken('s3nha') }))
     expect(res.headers.get('x-middleware-next')).toBe('1')
+  })
+
+  it('esconde o /uso de quem não é admin', async () => {
+    expect((await middleware(request('/uso', { cookie: await sessionToken('s3nha') }))).status).toBe(404)
+    expect((await middleware(request('/uso/x', { cookie: await sessionToken('s3nha') }))).status).toBe(404)
+    expect((await middleware(request('/usos', { cookie: await sessionToken('s3nha') }))).headers.get('x-middleware-next')).toBe('1')
+    expect((await middleware(request('/uso', { cookie: await sessionToken('adm1n') }))).headers.get('x-middleware-next')).toBe('1')
+  })
+
+  it('admin acessa o resto do app', async () => {
+    expect((await middleware(request('/', { method: 'POST', cookie: await sessionToken('adm1n') }))).headers.get('x-middleware-next')).toBe('1')
   })
 
   it('libera só o /login exato', async () => {
