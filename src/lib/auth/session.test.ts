@@ -37,6 +37,18 @@ describe('safeNext', () => {
     expect(safeNext('/\\evil.com')).toBe('/')
     expect(safeNext(null)).toBe('/')
   })
+
+  it('recusa caminhos que o navegador transforma em outro domínio', () => {
+    expect(safeNext('/\t/evil.com')).toBe('/')
+    expect(safeNext('/\n/evil.com')).toBe('/')
+    expect(safeNext('/\r/evil.com')).toBe('/')
+    expect(safeNext(new URLSearchParams('next=/%09/evil.com').get('next'))).toBe('/')
+  })
+
+  it('mantém caminho, busca e âncora', () => {
+    expect(safeNext('/times?mes=10#a')).toBe('/times?mes=10#a')
+    expect(safeNext('/')).toBe('/')
+  })
 })
 
 describe('middleware', () => {

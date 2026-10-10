@@ -31,7 +31,8 @@ export async function isValidSession(cookie: string | undefined, password: strin
 }
 
 export function safeNext(next: unknown): string {
-  if (typeof next !== 'string') return '/'
-  if (!next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return '/'
-  return next
+  if (typeof next !== 'string' || !next.startsWith('/')) return '/'
+  const url = new URL(next, 'http://n')
+  if (url.origin !== 'http://n') return '/'
+  return url.pathname + url.search + url.hash
 }
