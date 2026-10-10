@@ -1,19 +1,17 @@
 import type { Metadata } from 'next'
-import { Archivo } from 'next/font/google'
+import { Geist } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppNav } from '@/components/app-nav'
+import { AppShell } from '@/components/app-shell'
 import { SESSION_COOKIE, getSessionRole } from '@/lib/auth/session'
 import './globals.css'
 
-// O eixo `wdth` e o que permite estreitar os titulos sem carregar uma segunda
-// familia tipografica.
-const archivo = Archivo({
+const geist = Geist({
   variable: '--font-sans',
   subsets: ['latin'],
-  axes: ['wdth'],
   display: 'swap',
 })
 
@@ -26,20 +24,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const role = await getSessionRole((await cookies()).get(SESSION_COOKIE)?.value)
 
   return (
-    <html lang="pt-BR" className={archivo.variable}>
+    <html lang="pt-BR" className={geist.variable}>
       <body className="antialiased">
         <TooltipProvider delay={300}>
-          {/* Rail de icones no fundo cinza; o conteudo vive num painel branco
-              arredondado por cima dele. */}
-          <div className="flex min-h-screen flex-col md:flex-row">
-            <AppNav isAdmin={role === 'admin'} />
-
-            <main className="min-w-0 flex-1 p-2 md:py-3 md:pr-3 md:pl-0">
-              <div className="min-h-full rounded-2xl border border-border bg-card px-5 py-6 sm:px-7 md:rounded-3xl md:px-10 md:py-9">
-                {children}
-              </div>
-            </main>
-          </div>
+          <AppShell nav={<AppNav isAdmin={role === 'admin'} />}>{children}</AppShell>
         </TooltipProvider>
         <Toaster position="bottom-right" />
         {role !== 'admin' && <Analytics />}

@@ -2,120 +2,124 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, CalendarX2, ChartColumn, LogOut, Palette, Users } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  CalendarDays,
+  CalendarX2,
+  ChartColumn,
+  LogOut,
+  SlidersHorizontal,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logoutAction } from '@/app/login/actions'
 
-const LINKS = [
-  {
-    href: '/',
-    label: 'Escala',
-    description: 'Gera a escala do mês, permite trocar pessoas e baixar a planilha.',
-    icon: CalendarDays,
-  },
-  {
-    href: '/times',
-    label: 'Times',
-    description: 'Quantas pessoas cada posição leva por culto e as cores do rodízio.',
-    icon: Palette,
-  },
-  {
-    href: '/integrantes',
-    label: 'Integrantes',
-    description: 'Cadastro de quem serve, o que cada um toca e quem pode ser gestor.',
-    icon: Users,
-  },
-  {
-    href: '/disponibilidade',
-    label: 'Disponibilidade',
-    description: 'Marque os dias em que cada integrante avisou que não pode.',
-    icon: CalendarX2,
-  },
+type NavLink = {
+  href: string
+  label: string
+  short: string
+  icon: LucideIcon
+}
+
+const LINKS: NavLink[] = [
+  { href: '/', label: 'Escala', short: 'Escala', icon: CalendarDays },
+  { href: '/times', label: 'Times e formação', short: 'Times', icon: SlidersHorizontal },
+  { href: '/integrantes', label: 'Integrantes', short: 'Integrantes', icon: Users },
+  { href: '/disponibilidade', label: 'Disponibilidade', short: 'Ausências', icon: CalendarX2 },
 ]
 
-const ADMIN_LINKS = [
-  {
-    href: '/uso',
-    label: 'Uso',
-    description: 'Acessos, escalas geradas e baixadas. Só você vê esta seção.',
-    icon: ChartColumn,
-  },
+const ADMIN_LINKS: NavLink[] = [
+  { href: '/uso', label: 'Uso do app', short: 'Uso', icon: ChartColumn },
 ]
 
-/**
- * Rail de icones no fundo cinza, ao lado do painel branco.
- *
- * No celular vira uma barra horizontal com os rotulos, porque quatro icones
- * sozinhos no topo de uma tela estreita nao dizem para onde levam.
- */
 export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
 
   if (pathname === '/login') return null
 
-  return (
-    <nav
-      aria-label="Seções"
-      className="flex shrink-0 items-center gap-1 px-2 py-2 md:w-[68px] md:gap-0 md:flex-col md:items-center md:px-0 md:py-4"
-    >
-      <Link
-        href="/"
-        aria-label="Escala de Louvor"
-        className="mb-0 hidden size-9 items-center justify-center rounded-xl bg-foreground text-[13px] font-bold text-background md:mb-7 md:flex"
-      >
-        EL
-      </Link>
+  const links = isAdmin ? [...LINKS, ...ADMIN_LINKS] : LINKS
 
-      <ul className="flex min-w-0 flex-1 gap-1 overflow-x-auto md:flex-none md:flex-col md:gap-1.5 md:overflow-visible">
-        {(isAdmin ? [...LINKS, ...ADMIN_LINKS] : LINKS).map(({ href, label, description, icon: Icon }) => {
+  return (
+    <>
+      <nav
+        aria-label="Menu principal"
+        className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-4 py-6 md:flex"
+      >
+        <Link href="/" className="flex items-center gap-2.5 rounded-xl px-2 pt-1 pb-6">
+          <span className="flex size-9 items-center justify-center rounded-[10px] bg-primary text-sm font-semibold text-primary-foreground">
+            EL
+          </span>
+          <span className="text-[15px] font-semibold text-foreground">Escala de Louvor</span>
+        </Link>
+
+        <ul className="flex flex-col gap-1">
+          {links.map(({ href, label, icon: Icon }) => {
+            const active = pathname === href
+
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[15px] transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    active
+                      ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )}
+                >
+                  <Icon className="size-[18px] shrink-0" aria-hidden />
+                  {label}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+
+        <form action={logoutAction} className="mt-auto border-t border-sidebar-border pt-4">
+          <button
+            type="submit"
+            className="flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 text-[15px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <LogOut className="size-[18px] shrink-0" aria-hidden />
+            Sair
+          </button>
+        </form>
+      </nav>
+
+      <nav
+        aria-label="Navegação"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-sidebar-border bg-sidebar px-1 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:hidden"
+      >
+        {links.map(({ href, short, icon: Icon }) => {
           const active = pathname === href
 
           return (
-            <li key={href}>
-              <Tooltip>
-                <TooltipTrigger
-                  render={<Link href={href} />}
-                  aria-current={active ? 'page' : undefined}
-                  aria-label={label}
-                  className={cn(
-                    'flex items-center gap-2 rounded-xl px-3 py-2 text-sm whitespace-nowrap transition-colors md:size-10 md:justify-center md:px-0 md:py-0',
-                    active
-                      ? 'bg-foreground font-medium text-background'
-                      : 'text-muted-foreground hover:bg-card hover:text-foreground',
-                  )}
-                >
-                  <Icon className="size-[18px] shrink-0" />
-                  <span className="md:hidden">{label}</span>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  sideOffset={8}
-                  className="hidden flex-col items-start gap-0.5 md:flex"
-                >
-                  <span className="font-semibold">{label}</span>
-                  <span className="opacity-80">{description}</span>
-                </TooltipContent>
-              </Tooltip>
-            </li>
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px]',
+                active ? 'font-semibold text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <Icon className="size-[22px]" aria-hidden />
+              <span className="max-w-full truncate">{short}</span>
+            </Link>
           )
         })}
-      </ul>
 
-      <form action={logoutAction} className="md:mt-4 md:border-t md:border-border md:pt-4">
-        <Tooltip>
-          <TooltipTrigger
-            render={<button type="submit" />}
-            aria-label="Sair"
-            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:size-10"
+        <form action={logoutAction} className="flex min-w-0 flex-1">
+          <button
+            type="submit"
+            className="flex min-h-12 w-full flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground"
           >
-            <LogOut className="size-[18px]" />
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={8} className="hidden md:flex">
+            <LogOut className="size-[22px]" aria-hidden />
             Sair
-          </TooltipContent>
-        </Tooltip>
-      </form>
-    </nav>
+          </button>
+        </form>
+      </nav>
+    </>
   )
 }
