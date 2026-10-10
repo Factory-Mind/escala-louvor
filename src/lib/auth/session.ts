@@ -30,6 +30,23 @@ export async function isValidSession(cookie: string | undefined, password: strin
   return safeEqual(cookie, await sessionToken(password))
 }
 
+export type SessionRole = 'admin' | 'member'
+
+export function adminPassword(): string | undefined {
+  const admin = process.env.ADMIN_PASSWORD
+  if (!admin || admin === process.env.APP_PASSWORD) return undefined
+  return admin
+}
+
+export async function getSessionRole(cookie: string | undefined): Promise<SessionRole | null> {
+  if (!cookie) return null
+  const admin = adminPassword()
+  if (admin && (await isValidSession(cookie, admin))) return 'admin'
+  const member = process.env.APP_PASSWORD
+  if (member && (await isValidSession(cookie, member))) return 'member'
+  return null
+}
+
 export function safeNext(next: unknown): string {
   if (typeof next !== 'string' || !next.startsWith('/')) return '/'
   const url = new URL(next, 'http://n')

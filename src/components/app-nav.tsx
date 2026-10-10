@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, CalendarX2, LogOut, Palette, Users } from 'lucide-react'
+import { CalendarDays, CalendarX2, ChartColumn, LogOut, Palette, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { logoutAction } from '@/app/login/actions'
@@ -34,13 +34,22 @@ const LINKS = [
   },
 ]
 
+const ADMIN_LINKS = [
+  {
+    href: '/uso',
+    label: 'Uso',
+    description: 'Acessos, escalas geradas e baixadas. Só você vê esta seção.',
+    icon: ChartColumn,
+  },
+]
+
 /**
  * Rail de icones no fundo cinza, ao lado do painel branco.
  *
  * No celular vira uma barra horizontal com os rotulos, porque quatro icones
  * sozinhos no topo de uma tela estreita nao dizem para onde levam.
  */
-export function AppNav() {
+export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
 
   if (pathname === '/login') return null
@@ -59,7 +68,7 @@ export function AppNav() {
       </Link>
 
       <ul className="flex min-w-0 flex-1 gap-1 overflow-x-auto md:flex-none md:flex-col md:gap-1.5 md:overflow-visible">
-        {LINKS.map(({ href, label, description, icon: Icon }) => {
+        {(isAdmin ? [...LINKS, ...ADMIN_LINKS] : LINKS).map(({ href, label, description, icon: Icon }) => {
           const active = pathname === href
 
           return (

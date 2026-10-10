@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { SESSION_COOKIE, isValidSession } from '@/lib/auth/session'
+import { SESSION_COOKIE, getSessionRole } from '@/lib/auth/session'
 
 export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/login') return NextResponse.next()
@@ -9,7 +9,12 @@ export async function middleware(request: NextRequest) {
     return new NextResponse('APP_PASSWORD não configurada.', { status: 503 })
   }
 
-  if (await isValidSession(request.cookies.get(SESSION_COOKIE)?.value, password)) {
+  const role = await getSessionRole(request.cookies.get(SESSION_COOKIE)?.value)
+
+  if (role) {
+    if (isAdminPath(request.nextUrl.pathname) && role !== 'admin') {
+      return new NextResponse('Not Found', { status: 404 })
+    }
     return NextResponse.next()
   }
 
@@ -22,6 +27,10 @@ export async function middleware(request: NextRequest) {
   url.search = ''
   url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
   return NextResponse.redirect(url)
+}
+
+function isAdminPath(pathname: string) {
+  return pathname === '/uso' || pathname.startsWith('/uso/')
 }
 
 export const config = {
