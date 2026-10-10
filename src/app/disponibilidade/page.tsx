@@ -1,15 +1,15 @@
-import { ROLES, ROLE_LABELS, type Role } from '@/lib/domain/types'
-import { CalendarCheck, CalendarX2 } from 'lucide-react'
+import { EXCEPTION_KIND_OPTIONS, ROLES, ROLE_SHORT_LABELS, type Role } from '@/lib/domain/types'
 import { MonthPicker } from '@/components/month-picker'
-import { PageBar } from '@/components/page-bar'
+import { PageHeader } from '@/components/page-header'
 import { monthLabel } from '@/lib/domain/months'
 import { buildServiceDays, dateKey } from '@/lib/scheduler/serviceDays'
-import { loadFormation, loadMembers, loadUnavailable } from '@/server/queries'
+import { listExceptions, loadFormation, loadMembers, loadUnavailable } from '@/server/queries'
 import { AvailabilityBoard, type RoleGroup } from './availability-board'
 
 export const dynamic = 'force-dynamic'
 
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+const WEEKDAYS_LONG = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 function currentMonth() {
   const now = new Date()
@@ -26,27 +26,36 @@ export default async function AvailabilityPage({
   const year = Number(params.year) || fallback.year
   const month = Number(params.month) || fallback.month
 
-  const [members, unavailable, formation] = await Promise.all([
+  const [members, unavailable, formation, exceptions] = await Promise.all([
     loadMembers(),
     loadUnavailable(year, month),
     loadFormation(),
+    listExceptions(year, month),
   ])
 
-  const days = buildServiceDays(year, month).map((day) => ({
-    key: dateKey(day.date),
-    day: String(day.date.getUTCDate()).padStart(2, '0'),
-    weekday: WEEKDAYS[day.date.getUTCDay()],
-    /** Domingo tem culto de manhã e de noite; a disponibilidade vale para o dia. */
-    services: day.services.length,
-  }))
+  const excecaoPorDia = new Map(exceptions.map((e) => [dateKey(e.date), e]))
+  const mes = monthLabel(year, month).replace(/ de \d+$/, '')
+
+  const days = buildServiceDays(year, month).map((day) => {
+    const key = dateKey(day.date)
+    const excecao = excecaoPorDia.get(key)
+    const dia = String(day.date.getUTCDate()).padStart(2, '0')
+
+    return {
+      key,
+      day: dia,
+      weekday: WEEKDAYS[day.date.getUTCDay()],
+      title: `${WEEKDAYS_LONG[day.date.getUTCDay()]}, ${day.date.getUTCDate()} de ${mes}`,
+      services: day.services.length,
+      note: excecao ? excecao.label?.trim() || EXCEPTION_KIND_OPTIONS[excecao.kind] : null,
+    }
+  })
 
   const ativos = members.filter((m) => m.active)
 
-  // Quem toca cada instrumento. Quem toca dois aparece nos dois grupos — e e
-  // assim que se enxerga que faltar uma pessoa pode quebrar duas posicoes.
   const groups: RoleGroup[] = ROLES.map((role: Role) => ({
     role,
-    label: ROLE_LABELS[role],
+    label: ROLE_SHORT_LABELS[role],
     needed: formation[role],
     members: ativos
       .filter((m) => m.roles.includes(role))
@@ -54,42 +63,25 @@ export default async function AvailabilityPage({
   })).filter((group) => group.members.length > 0 || group.needed > 0)
 
   return (
-    <div>
-      <PageBar icon={CalendarX2} title="Disponibilidade">
-        <MonthPicker year={year} month={month} />
-      </PageBar>
-
-      <p className="mb-7 max-w-prose text-sm leading-relaxed text-muted-foreground">
-        Marque quem avisou que não pode. Quem estiver marcado fica de fora do sorteio
-        daquele dia.
-      </p>
+    <>
+      <PageHeader
+        eyebrow="Disponibilidade"
+        title={<MonthPicker year={year} month={month} />}
+        description="Marque quem avisou que não pode. Quem estiver marcado fica fora do sorteio daquele dia."
+      />
 
       {ativos.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-card border border-border bg-card px-5 py-8 text-sm text-muted-foreground">
           Cadastre os integrantes antes de marcar a disponibilidade.
         </p>
       ) : (
-        <section className="rounded-2xl border border-border">
-          <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-            <h2 className="flex items-center gap-2.5 text-[15px] font-semibold">
-              <CalendarCheck className="size-[18px] text-faint" />
-              Cultos de {monthLabel(year, month)}
-            </h2>
-            <p className="text-xs text-faint">
-              O número abaixo de cada dia é quanta gente sobra naquela posição.
-            </p>
-          </header>
-
-          <div className="border-t border-border px-4 py-4 sm:px-5">
-            <AvailabilityBoard
-              caption={`Cultos de ${monthLabel(year, month)}`}
-              days={days}
-              groups={groups}
-              unavailable={[...unavailable]}
-            />
-          </div>
-        </section>
+        <AvailabilityBoard
+          caption={`Cultos de ${monthLabel(year, month)}`}
+          days={days}
+          groups={groups}
+          unavailable={[...unavailable]}
+        />
       )}
-    </div>
+    </>
   )
 }

@@ -37,7 +37,7 @@ export function GenerateButton({
     })
 
   return (
-    <Button onClick={run} disabled={pending}>
+    <Button size="lg" onClick={run} disabled={pending}>
       <RefreshCw className={pending ? 'animate-spin' : undefined} />
       {pending ? 'Gerando…' : hasSchedule ? 'Gerar de novo' : 'Gerar escala'}
     </Button>

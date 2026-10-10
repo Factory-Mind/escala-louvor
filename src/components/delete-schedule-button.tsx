@@ -43,11 +43,16 @@ export function DeleteScheduleButton({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button variant="ghost" className="text-muted-foreground hover:text-destructive" />
+          <Button
+            size="lg"
+            variant="ghost"
+            aria-label="Excluir escala"
+            className="px-3 text-muted-foreground hover:text-destructive md:px-4"
+          />
         }
       >
         <Trash2 />
-        Excluir escala
+        <span className="hidden md:inline">Excluir</span>
       </AlertDialogTrigger>
 
       <AlertDialogContent>

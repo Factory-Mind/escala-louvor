@@ -11,8 +11,25 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-faint: var(--faint);
+  --color-subtle: var(--subtle);
   --color-rule-strong: var(--rule-strong);
+  --color-divider: var(--divider);
   --color-tray: var(--tray);
+  --color-table-head: var(--table-head);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-gestor-soft: var(--gestor-soft);
+  --color-gestor-foreground: var(--gestor-foreground);
+  --color-ministro-soft: var(--ministro-soft);
+  --color-ministro-foreground: var(--ministro-foreground);
+  --radius-card: 1rem;
+  --radius-tile: 0.875rem;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -52,43 +69,58 @@
 }
 
 :root {
-  /* Fundo cinza com o conteudo num painel branco arredondado por cima — as
-     unicas cores saturadas continuam sendo as dos times, que vem do banco e
-     precisam sair identicas no .xlsx. */
-  --background: #edf0f4;
-  --foreground: #15171c;
+  --background: #f4f5f7;
+  --foreground: #17181c;
   --card: #ffffff;
-  --card-foreground: #15171c;
+  --card-foreground: #17181c;
   --popover: #ffffff;
-  --popover-foreground: #15171c;
-  --primary: #15171c;
+  --popover-foreground: #17181c;
+  --primary: #17181c;
   --primary-foreground: #ffffff;
-  --secondary: #f4f6f9;
-  --secondary-foreground: #15171c;
-  --muted: #f4f6f9;
-  --muted-foreground: #5c6270;
-  --accent: #f4f6f9;
-  --accent-foreground: #15171c;
-  --destructive: #b03a26;
-  --border: #e5e9ef;
-  --input: #dfe4ec;
-  --ring: #15171c;
+  --secondary: #f0f1f4;
+  --secondary-foreground: #17181c;
+  --muted: #f0f1f4;
+  --muted-foreground: #5b5f6b;
+  --accent: #f0f1f4;
+  --accent-foreground: #17181c;
+  --destructive: #b42318;
+  --border: #e3e5ea;
+  --input: #d5d8df;
+  --ring: #17181c;
   --radius: 0.625rem;
 
-  /* Fora da paleta shadcn: o cinza mais claro que ainda passa em contraste, a
-     regua forte que separa blocos e a bandeja onde os cards descansam. */
-  --faint: #8b93a1;
-  --rule-strong: #cfd5df;
-  --tray: #f4f6f9;
+  --faint: #9a9ea8;
+  --subtle: #3d414b;
+  --rule-strong: #b8bcc6;
+  --divider: #f0f1f4;
+  --tray: #f7f7f9;
+  --table-head: #fafafb;
 
-  --sidebar: #edf0f4;
-  --sidebar-foreground: #15171c;
-  --sidebar-primary: #15171c;
+  --danger-soft: #fef3f2;
+  --danger-border: #fbd5d0;
+  --danger-strong: #d92d20;
+  --danger-foreground: #912018;
+  --warning-soft: #fff1d6;
+  --warning-border: #e8b860;
+  --warning-foreground: #7a4a00;
+  --success: #2f9e5b;
+  --gestor-soft: #e3ecfc;
+  --gestor-foreground: #1e4fa3;
+  --ministro-soft: #eee6fb;
+  --ministro-foreground: #5b32a0;
+
+  --chart-1: #17181c;
+  --chart-2: #4c8eea;
+  --chart-3: #e07b39;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3d414b;
+  --sidebar-primary: #17181c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f4f6f9;
-  --sidebar-accent-foreground: #15171c;
-  --sidebar-border: #e5e9ef;
-  --sidebar-ring: #15171c;
+  --sidebar-accent: #f0f1f4;
+  --sidebar-accent-foreground: #17181c;
+  --sidebar-border: #e3e5ea;
+  --sidebar-ring: #17181c;
 }
 
 .dark {
@@ -99,24 +131,42 @@
   --popover: #171a20;
   --popover-foreground: #f2f4f7;
   --primary: #f2f4f7;
-  --primary-foreground: #15171c;
+  --primary-foreground: #17181c;
   --secondary: #22262e;
   --secondary-foreground: #f2f4f7;
   --muted: #22262e;
   --muted-foreground: #9aa1ae;
   --accent: #22262e;
   --accent-foreground: #f2f4f7;
-  --destructive: #e0664c;
+  --destructive: #f97066;
   --border: #272b33;
   --input: #333843;
   --ring: #9aa1ae;
   --faint: #6f7684;
-  --rule-strong: #333843;
+  --subtle: #c9ccd3;
+  --rule-strong: #4a4f5a;
+  --divider: #22262e;
   --tray: #1b1f26;
+  --table-head: #1b1f26;
+  --danger-soft: #3a1714;
+  --danger-border: #6b231c;
+  --danger-strong: #f97066;
+  --danger-foreground: #fda29b;
+  --warning-soft: #3a2a0c;
+  --warning-border: #7a5a1c;
+  --warning-foreground: #fcd38a;
+  --success: #47cd89;
+  --gestor-soft: #1c2c4a;
+  --gestor-foreground: #a4c2f4;
+  --ministro-soft: #2c2140;
+  --ministro-foreground: #cdb8f2;
+  --chart-1: #f2f4f7;
+  --chart-2: #4c8eea;
+  --chart-3: #e07b39;
   --sidebar: #171a20;
-  --sidebar-foreground: #f2f4f7;
+  --sidebar-foreground: #c9ccd3;
   --sidebar-primary: #f2f4f7;
-  --sidebar-primary-foreground: #15171c;
+  --sidebar-primary-foreground: #17181c;
   --sidebar-accent: #22262e;
   --sidebar-accent-foreground: #f2f4f7;
   --sidebar-border: #272b33;
@@ -136,27 +186,24 @@
 }
 
 @layer base {
-  /* Datas e numeros alinhados em coluna. */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
 
-  /* O nome do mes e os titulos de tela. Uma familia so (Archivo variavel),
-     puxada para o extremo estreito e pesado do eixo de largura — e o unico
-     lugar onde a tipografia levanta a voz. */
-  .display {
-    font-stretch: 78%;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 0.95;
+  .team-chip {
+    background-color: color-mix(in oklab, var(--team) 22%, white);
+    color: color-mix(in oklab, var(--team) 40%, black);
   }
 
-  /* Rotulo de dado: nome de instrumento, cabecalho de coluna. Nao e enfeite,
-     e o mesmo texto que sai na planilha. */
-  .rotulo {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    line-height: 1.2;
+  .team-dot {
+    background-color: var(--team);
+  }
+
+  .stripes {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--tray) 0 10px,
+      var(--divider) 10px 20px
+    );
   }
 }
