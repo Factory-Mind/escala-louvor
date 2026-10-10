@@ -38,7 +38,13 @@ export function DownloadButton({ year, month }: { year: number; month: number })
   }
 
   return (
-    <Button variant="outline" onClick={download} disabled={pending}>
+    <Button
+      size="lg"
+      variant="outline"
+      className="bg-card"
+      onClick={download}
+      disabled={pending}
+    >
       {pending ? <LoaderCircle className="animate-spin" /> : <Download />}
       {pending ? 'Baixando…' : 'Baixar .xlsx'}
     </Button>

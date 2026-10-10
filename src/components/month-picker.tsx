@@ -2,24 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { monthLabel } from '@/lib/domain/months'
+import { monthName } from '@/lib/domain/months'
 
-/**
- * Passa o mes pela query string.
- *
- * Na tela de escala o mes ja e o titulo da pagina, entao o seletor aparece so
- * com as setas (`showLabel={false}`) para o nome nao sair duas vezes.
- */
-export function MonthPicker({
-  year,
-  month,
-  showLabel = true,
-}: {
-  year: number
-  month: number
-  showLabel?: boolean
-}) {
+export function MonthPicker({ year, month }: { year: number; month: number }) {
   const router = useRouter()
 
   const go = (delta: number) => {
@@ -28,22 +13,20 @@ export function MonthPicker({
   }
 
   const seta =
-    'flex size-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-rule-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+    'flex size-10 shrink-0 items-center justify-center rounded-[10px] text-foreground transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:size-11 md:border md:border-border md:bg-card md:hover:border-rule-strong md:hover:bg-card'
 
   return (
-    <div className={cn('flex items-center', showLabel ? 'gap-2' : 'gap-1')}>
+    <div className="-ml-2.5 flex items-center gap-1 md:ml-0 md:gap-2">
       <button type="button" className={seta} onClick={() => go(-1)} aria-label="Mês anterior">
-        <ChevronLeft className="size-4" />
+        <ChevronLeft className="size-[18px]" />
       </button>
 
-      {showLabel && (
-        <span className="min-w-40 text-center text-sm font-medium">
-          {monthLabel(year, month)}
-        </span>
-      )}
+      <h1 className="text-[22px] font-semibold tracking-[-0.02em] capitalize md:mx-2 md:text-[32px] md:leading-tight">
+        {monthName(month)} {year}
+      </h1>
 
       <button type="button" className={seta} onClick={() => go(1)} aria-label="Próximo mês">
-        <ChevronRight className="size-4" />
+        <ChevronRight className="size-[18px]" />
       </button>
     </div>
   )

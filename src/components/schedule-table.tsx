@@ -1,10 +1,10 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Lock, LockOpen, Plus, TriangleAlert } from 'lucide-react'
+import { Lock, LockOpen, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Role } from '@/lib/domain/types'
-import { A_DEFINIR, ROLE_SHORT_LABELS } from '@/lib/domain/types'
+import { ROLE_SHORT_LABELS } from '@/lib/domain/types'
 import { cn } from '@/lib/utils'
 import {
   Command,
@@ -16,6 +16,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { TeamChip } from '@/components/team-chip'
 import {
   addAssignmentAction,
   removeAssignmentAction,
@@ -36,38 +37,41 @@ export type CellItem = {
 
 export type TableCell = {
   key: string
+  label: string
   roles: Role[]
   items: CellItem[]
 }
 
 export type TableRow = {
   entryId: string
-  date: string
   dateKey: string
-  day: string
+  weekday: string
+  dayOfMonth: string
+  slot: string
   teamName: string
   teamColor: string
   locked: boolean
-  exception?: boolean
+  exception: { kind: string; label: string | null } | null
   cells: TableCell[]
 }
 
 export type RosterMember = { id: string; name: string }
 
 type Props = {
-  headers: string[]
+  columns: Array<{ key: string; label: string }>
   rows: TableRow[]
-  /** Quem toca cada instrumento, para o seletor de cada célula. */
   roster: Record<Role, RosterMember[]>
-  /** Chaves `memberId:AAAA-MM-DD` de quem avisou que não pode. */
   unavailable: string[]
+  firstOpenId?: string
 }
 
-export function ScheduleTable({ headers, rows, roster, unavailable }: Props) {
+type Run = (action: () => Promise<void>) => void
+
+export function ScheduleTable({ columns, rows, roster, unavailable, firstOpenId }: Props) {
   const [pending, startTransition] = useTransition()
   const unavailableSet = new Set(unavailable)
 
-  const run = (action: () => Promise<void>) =>
+  const run: Run = (action) =>
     startTransition(async () => {
       try {
         await action()
@@ -76,154 +80,274 @@ export function ScheduleTable({ headers, rows, roster, unavailable }: Props) {
       }
     })
 
+  const cellProps = { roster, unavailableSet, onAction: run }
+
   return (
-    <div className={cn('overflow-x-auto', pending && 'opacity-70')}>
-        <table className="w-full border-collapse text-center text-[13px]">
+    <div className={cn('transition-opacity', pending && 'opacity-70')}>
+      <div className="relative hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[1080px] border-collapse text-sm">
           <thead>
-            <tr>
-              {headers.map((header) => (
+            <tr className="bg-table-head text-left text-xs tracking-[0.04em] text-muted-foreground uppercase">
+              <th scope="col" className="border-b border-border px-5 py-3 font-semibold">
+                Culto
+              </th>
+              <th scope="col" className="border-b border-border px-3 py-3 font-semibold">
+                Time
+              </th>
+              {columns.map((column) => (
                 <th
-                  key={header}
+                  key={column.key}
                   scope="col"
-                  className="border border-black bg-[#CCC0DA] px-2 py-2.5 font-semibold text-black"
+                  className="border-b border-border px-3 py-3 font-semibold whitespace-nowrap"
                 >
-                  {header}
+                  {column.label}
                 </th>
               ))}
-              <th className="w-8 bg-card" />
+              <th scope="col" className="w-12 border-b border-border">
+                <span className="sr-only">Trava</span>
+              </th>
             </tr>
           </thead>
 
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.entryId}>
-                <td
-                  className="tabular border border-black px-2 py-2 font-semibold whitespace-nowrap text-black"
-                  style={{ backgroundColor: row.teamColor }}
-                >
-                  {row.date}
-                </td>
-                <td
-                  className="border border-black px-2 py-2 font-semibold text-black"
-                  style={{ backgroundColor: row.teamColor }}
-                >
-                  {row.day}
-                </td>
-
-                {row.cells.map((cell) => (
+            {rows.map((row) =>
+              row.exception ? (
+                <tr key={row.entryId} className="stripes">
+                  <td className="border-b border-divider px-5 py-4 align-middle">
+                    <CultoLabel row={row} />
+                  </td>
                   <td
-                    key={cell.key}
-                    className="group/cell relative border border-black p-0"
-                    style={{ backgroundColor: row.teamColor }}
+                    colSpan={columns.length + 2}
+                    className="border-b border-divider px-3 py-4 text-subtle"
                   >
-                    <div className="flex min-h-9 flex-wrap items-center justify-center">
-                      {cell.items.map((item, index) => (
-                        <span key={item.assignmentId} className="flex items-center">
-                          {index > 0 && <span className="font-semibold text-black">/</span>}
+                    <ExceptionText exception={row.exception} />
+                  </td>
+                </tr>
+              ) : (
+                <tr key={row.entryId} className="group/row">
+                  <td className="border-b border-divider px-5 py-3.5 align-middle whitespace-nowrap">
+                    <CultoLabel row={row} />
+                  </td>
+                  <td className="border-b border-divider px-3 py-3.5 whitespace-nowrap">
+                    {row.teamName && <TeamChip name={row.teamName} color={row.teamColor} />}
+                  </td>
+
+                  {row.cells.map((cell) => (
+                    <td
+                      key={cell.key}
+                      className="group/cell relative border-b border-divider py-2.5 pr-9 pl-3"
+                    >
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {cell.items.map((item) => (
                           <CellButton
+                            key={item.assignmentId}
+                            id={item.assignmentId === firstOpenId ? 'vaga' : undefined}
                             item={item}
-                            role={item.role}
                             entryId={row.entryId}
                             dateKey={row.dateKey}
-                            roster={roster[item.role] ?? []}
-                            unavailableSet={unavailableSet}
-                            onAction={run}
+                            {...cellProps}
                           />
-                        </span>
-                      ))}
-                    </div>
+                        ))}
+                        <AddButton
+                          roles={cell.roles}
+                          entryId={row.entryId}
+                          dateKey={row.dateKey}
+                          taken={row.cells.flatMap((c) => c.items.map((i) => i.memberId))}
+                          className="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100"
+                          {...cellProps}
+                        />
+                      </div>
+                    </td>
+                  ))}
 
-                    {!row.exception && (
+                  <td className="border-b border-divider pr-3 text-right">
+                    <RowLock
+                      row={row}
+                      onAction={run}
+                      className={cn(
+                        'size-9',
+                        !row.locked && 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
+                      )}
+                    />
+                  </td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex flex-col gap-3 md:hidden">
+        {rows.map((row) =>
+          row.exception ? (
+            <article
+              key={row.entryId}
+              className="stripes flex items-center gap-3 rounded-card border border-border px-4 py-3.5"
+            >
+              <CultoLabel row={row} />
+              <ExceptionText exception={row.exception} />
+            </article>
+          ) : (
+            <article
+              key={row.entryId}
+              className="overflow-hidden rounded-card border border-border bg-card"
+            >
+              <div className="flex items-center gap-3 border-b border-divider py-2 pr-1 pl-4">
+                <DayBadge row={row} />
+                <span className="flex-1 text-[15px] font-semibold">{row.slot}</span>
+                {row.teamName && <TeamChip name={row.teamName} color={row.teamColor} />}
+                <RowLock row={row} onAction={run} className="size-11" />
+              </div>
+
+              <div className="px-4 pt-1 pb-2">
+                {row.cells.map((cell) => (
+                  <div
+                    key={cell.key}
+                    className="flex min-h-11 items-center gap-3 border-b border-background last:border-0"
+                  >
+                    <span className="w-[108px] shrink-0 text-[13px] text-muted-foreground">
+                      {cell.label}
+                    </span>
+                    <div className="flex flex-1 flex-wrap items-center gap-1.5 py-1.5">
+                      {cell.items.map((item) => (
+                        <CellButton
+                          key={item.assignmentId}
+                          id={item.assignmentId === firstOpenId ? 'vaga-m' : undefined}
+                          item={item}
+                          entryId={row.entryId}
+                          dateKey={row.dateKey}
+                          {...cellProps}
+                        />
+                      ))}
                       <AddButton
                         roles={cell.roles}
                         entryId={row.entryId}
                         dateKey={row.dateKey}
-                        roster={roster}
                         taken={row.cells.flatMap((c) => c.items.map((i) => i.memberId))}
-                        unavailableSet={unavailableSet}
-                        onAction={run}
+                        {...cellProps}
                       />
-                    )}
-                  </td>
+                    </div>
+                  </div>
                 ))}
-
-                <td
-                  className="border border-black px-2 py-2 font-semibold whitespace-nowrap text-black italic"
-                  style={{ backgroundColor: row.teamColor }}
-                >
-                  {row.teamName}
-                </td>
-
-                {/* Fora da área que vira planilha: trava da linha. */}
-                <td className="bg-card pl-1.5">
-                  <button
-                    type="button"
-                    onClick={() => run(() => toggleEntryLockAction(row.entryId))}
-                    title={row.locked ? 'Destravar linha' : 'Travar linha'}
-                    aria-pressed={row.locked}
-                    className={cn(
-                      'flex size-7 items-center justify-center rounded-sm transition-colors',
-                      row.locked
-                        ? 'text-foreground'
-                        : 'text-transparent hover:bg-secondary hover:text-muted-foreground',
-                    )}
-                  >
-                    {row.locked ? (
-                      <Lock className="size-3.5" />
-                    ) : (
-                      <LockOpen className="size-3.5" />
-                    )}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-      </table>
+              </div>
+            </article>
+          ),
+        )}
+      </div>
     </div>
   )
 }
 
+function DayBadge({ row }: { row: TableRow }) {
+  return (
+    <div className="flex w-11 shrink-0 flex-col text-center">
+      <span className="text-[11px] font-semibold text-muted-foreground">{row.weekday}</span>
+      <span className="tabular text-xl leading-tight font-semibold">{row.dayOfMonth}</span>
+    </div>
+  )
+}
+
+function CultoLabel({ row }: { row: TableRow }) {
+  return (
+    <div className="flex items-center gap-3">
+      <DayBadge row={row} />
+      <span className="hidden text-subtle md:inline">{row.slot}</span>
+    </div>
+  )
+}
+
+function ExceptionText({ exception }: { exception: NonNullable<TableRow['exception']> }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
+      <span className="rounded-full border border-input bg-card px-2.5 py-1 text-xs font-semibold tracking-[0.04em] text-subtle uppercase">
+        {exception.kind}
+      </span>
+      {exception.label && <span className="font-medium text-foreground">{exception.label}</span>}
+      <span className="text-muted-foreground">· ninguém escalado</span>
+    </div>
+  )
+}
+
+function RowLock({
+  row,
+  onAction,
+  className,
+}: {
+  row: TableRow
+  onAction: Run
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onAction(() => toggleEntryLockAction(row.entryId))}
+      title={row.locked ? 'Destravar linha' : 'Travar linha'}
+      aria-label={row.locked ? 'Destravar linha' : 'Travar linha'}
+      aria-pressed={row.locked}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-[10px] transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        row.locked
+          ? 'text-foreground hover:bg-secondary'
+          : 'text-faint hover:bg-secondary hover:text-foreground',
+        className,
+      )}
+    >
+      {row.locked ? <Lock className="size-4" /> : <LockOpen className="size-4" />}
+    </button>
+  )
+}
+
 function CellButton({
+  id,
   item,
-  role,
   entryId,
   dateKey,
-  roster,
+  roster: rosterByRole,
   unavailableSet,
   onAction,
 }: {
+  id?: string
   item: CellItem
-  role: Role
   entryId: string
   dateKey: string
-  roster: RosterMember[]
+  roster: Record<Role, RosterMember[]>
   unavailableSet: Set<string>
-  onAction: (action: () => Promise<void>) => void
+  onAction: Run
 }) {
+  const role = item.role
+  const roster = rosterByRole[role] ?? []
   const vago = item.memberId === null
   const livres = roster.filter((m) => !unavailableSet.has(`${m.id}:${dateKey}`))
   const ocupados = roster.filter((m) => unavailableSet.has(`${m.id}:${dateKey}`))
-  const travada = item.locked
 
   return (
     <Popover>
       <PopoverTrigger
+        id={id}
         className={cn(
-          'cursor-pointer rounded-sm px-1.5 py-2 font-semibold text-black italic underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-none',
-          vago && 'text-[#8B1A0B] not-italic',
-          travada && 'ring-1 ring-black/40 ring-inset',
+          'inline-flex min-h-8 cursor-pointer scroll-mt-24 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          vago
+            ? 'border-dashed border-danger-strong bg-danger-soft font-semibold text-destructive hover:bg-danger-border/40'
+            : 'border-border bg-card font-medium text-foreground hover:border-rule-strong aria-expanded:border-rule-strong',
         )}
       >
         {vago ? (
-          <span className="inline-flex items-center gap-1">
-            <TriangleAlert className="size-3.5" />
-            {A_DEFINIR}
-          </span>
+          <>
+            <Plus className="size-3.5" strokeWidth={2.4} />
+            Escolher
+          </>
         ) : (
           <>
             {item.name}
-            {item.isGestor && <span>/GESTOR</span>}
+            {item.isGestor && (
+              <span className="rounded-full bg-gestor-soft px-1.5 py-px text-[11px] font-semibold text-gestor-foreground">
+                Gestor
+              </span>
+            )}
           </>
+        )}
+        {item.locked && (
+          <Lock className="size-3 text-muted-foreground" aria-label="Célula travada" />
         )}
       </PopoverTrigger>
 
@@ -311,6 +435,7 @@ function AddButton({
   taken,
   unavailableSet,
   onAction,
+  className,
 }: {
   roles: Role[]
   entryId: string
@@ -318,7 +443,8 @@ function AddButton({
   roster: Record<Role, RosterMember[]>
   taken: Array<string | null>
   unavailableSet: Set<string>
-  onAction: (action: () => Promise<void>) => void
+  onAction: Run
+  className?: string
 }) {
   const ocupados = new Set(taken)
 
@@ -327,7 +453,10 @@ function AddButton({
       <PopoverTrigger
         aria-label="Adicionar integrante"
         title="Adicionar integrante"
-        className="absolute top-1/2 right-0.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover/cell:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-none"
+        className={cn(
+          'inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-dashed border-input text-muted-foreground transition hover:border-rule-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          className,
+        )}
       >
         <Plus className="size-3.5" />
       </PopoverTrigger>
