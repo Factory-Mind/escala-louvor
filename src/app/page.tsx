@@ -210,8 +210,8 @@ export default async function SchedulePage({
         </p>
       )}
 
-      <section className="rounded-card md:overflow-hidden md:border md:border-border md:bg-card">
-        <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 md:flex">
+      <section className="overflow-hidden rounded-card border border-border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3.5 md:px-5 md:py-4">
           <h2 className="text-[15px] font-semibold first-letter:uppercase">
             {monthLabel(year, month)}
           </h2>
@@ -227,12 +227,14 @@ export default async function SchedulePage({
                 ))}
               </ul>
             )}
-            {exceptionsPanel}
+            <div className="hidden md:block">{exceptionsPanel}</div>
           </div>
         </div>
 
         {temEscala ? (
           <ScheduleTable
+            year={year}
+            month={month}
             columns={COLUMNS.map((c) => ({ key: c.key, label: COLUMN_LABELS[c.key] }))}
             rows={rows}
             roster={roster}
@@ -240,7 +242,7 @@ export default async function SchedulePage({
             firstOpenId={abertas[0]?.assignmentId}
           />
         ) : (
-          <div className="rounded-card border border-border bg-card px-5 py-8 md:rounded-none md:border-0">
+          <div className="px-5 py-8">
             <p className="text-[15px] font-medium">
               Ainda não existe escala para {monthLabel(year, month)}.
             </p>
@@ -267,9 +269,8 @@ export default async function SchedulePage({
         )}
 
         {temEscala && (
-          <p className="hidden border-t border-divider px-5 py-3.5 text-[13px] text-muted-foreground md:block">
-            Clique em um nome para trocar a pessoa. As cores fortes por time continuam no .xlsx
-            exportado.
+          <p className="border-t border-divider px-4 py-3 text-[13px] text-muted-foreground md:px-5 md:py-3.5">
+            Clique em um dia do calendário para ver quem foi escalado em cada função.
           </p>
         )}
       </section>
@@ -316,7 +317,7 @@ function Stat({
       <div className="flex items-baseline justify-between gap-2">
         <span
           className={cn(
-            'tabular text-xl font-semibold tracking-[-0.02em] md:text-[30px] md:leading-tight',
+            'tabular text-xl font-bold tracking-[-0.02em] md:text-[32px] md:leading-tight',
             alerta && 'text-destructive',
           )}
         >
@@ -326,7 +327,7 @@ function Stat({
           <>
             <a
               href="#vaga"
-              className="hidden text-sm font-medium text-danger-foreground hover:underline md:inline"
+              className="hidden text-sm font-medium text-danger-foreground underline underline-offset-4 md:inline"
             >
               Resolver agora →
             </a>

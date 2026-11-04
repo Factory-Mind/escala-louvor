@@ -1,11 +1,13 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { Lock, LockOpen, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Role } from '@/lib/domain/types'
 import { ROLE_SHORT_LABELS } from '@/lib/domain/types'
+import { monthName } from '@/lib/domain/months'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -15,8 +17,16 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { TeamChip } from '@/components/team-chip'
+import { TeamChip, TeamDot, teamStyle } from '@/components/team-chip'
 import {
   addAssignmentAction,
   removeAssignmentAction,
@@ -58,6 +68,8 @@ export type TableRow = {
 export type RosterMember = { id: string; name: string }
 
 type Props = {
+  year?: number
+  month?: number
   columns: Array<{ key: string; label: string }>
   rows: TableRow[]
   roster: Record<Role, RosterMember[]>
@@ -67,9 +79,46 @@ type Props = {
 
 type Run = (action: () => Promise<void>) => void
 
-export function ScheduleTable({ columns, rows, roster, unavailable, firstOpenId }: Props) {
+const WEEKDAYS_HEADER = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+
+const WEEKDAY_LONG: Record<string, string> = {
+  DOM: 'Domingo',
+  SEG: 'Segunda',
+  TER: 'Terça',
+  QUA: 'Quarta',
+  QUI: 'Quinta',
+  SEX: 'Sexta',
+  SÁB: 'Sábado',
+}
+
+function iniciais(name: string) {
+  return name.trim().slice(0, 2).toUpperCase()
+}
+
+function inferYearMonth(rows: TableRow[], year?: number, month?: number) {
+  if (year && month) return { year, month }
+  const first = rows[0]?.dateKey
+  if (first && /^\d{4}-\d{2}/.test(first)) {
+    return { year: Number(first.slice(0, 4)), month: Number(first.slice(5, 7)) }
+  }
+  const now = new Date()
+  return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 }
+}
+
+export function ScheduleTable({
+  year: propYear,
+  month: propMonth,
+  rows,
+  roster,
+  unavailable,
+  firstOpenId,
+}: Props) {
   const [pending, startTransition] = useTransition()
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+  const [activeEntryIdx, setActiveEntryIdx] = useState(0)
   const unavailableSet = new Set(unavailable)
+
+  const { year, month } = inferYearMonth(rows, propYear, propMonth)
 
   const run: Run = (action) =>
     startTransition(async () => {
@@ -82,176 +131,342 @@ export function ScheduleTable({ columns, rows, roster, unavailable, firstOpenId 
 
   const cellProps = { roster, unavailableSet, onAction: run }
 
+  const rowsByDate = useMemo(() => {
+    const map = new Map<string, TableRow[]>()
+    for (const row of rows) {
+      const list = map.get(row.dateKey) ?? []
+      list.push(row)
+      map.set(row.dateKey, list)
+    }
+    return map
+  }, [rows])
+
+  const firstOpenRow = firstOpenId
+    ? rows.find((r) => r.cells.some((c) => c.items.some((i) => i.assignmentId === firstOpenId)))
+    : undefined
+
+  useEffect(() => {
+    const checkHash = () => {
+      if ((window.location.hash === '#vaga' || window.location.hash === '#vaga-m') && firstOpenRow) {
+        const dayRows = rowsByDate.get(firstOpenRow.dateKey) ?? []
+        const idx = Math.max(0, dayRows.findIndex((r) => r.entryId === firstOpenRow.entryId))
+        setSelectedDateKey(firstOpenRow.dateKey)
+        setActiveEntryIdx(idx)
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }
+    checkHash()
+    window.addEventListener('hashchange', checkHash)
+    return () => window.removeEventListener('hashchange', checkHash)
+  }, [firstOpenRow, rowsByDate])
+
+  const firstDayWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay()
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+
+  const calendarCells: Array<{ day: number; dateKey: string; dayRows: TableRow[] } | null> = []
+  for (let i = 0; i < firstDayWeekday; i++) {
+    calendarCells.push(null)
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dk = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    calendarCells.push({
+      day: d,
+      dateKey: dk,
+      dayRows: rowsByDate.get(dk) ?? [],
+    })
+  }
+
+  const selectedRows = selectedDateKey ? (rowsByDate.get(selectedDateKey) ?? []) : []
+  const currentRow = selectedRows[activeEntryIdx] ?? selectedRows[0] ?? null
+
+  const openDayModal = (dk: string, entryIdx = 0) => {
+    setSelectedDateKey(dk)
+    setActiveEntryIdx(entryIdx)
+  }
+
   return (
     <div className={cn('transition-opacity', pending && 'opacity-70')}>
-      <div className="relative hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[1080px] border-collapse text-sm">
-          <thead>
-            <tr className="bg-table-head text-left text-xs tracking-[0.04em] text-muted-foreground uppercase">
-              <th scope="col" className="border-b border-border px-5 py-3 font-semibold">
-                Culto
-              </th>
-              <th scope="col" className="border-b border-border px-3 py-3 font-semibold">
-                Time
-              </th>
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  scope="col"
-                  className="border-b border-border px-3 py-3 font-semibold whitespace-nowrap"
+      {firstOpenRow && (
+        <div className="sr-only">
+          <button
+            id="vaga"
+            type="button"
+            onClick={() => openDayModal(firstOpenRow.dateKey)}
+          >
+            Resolver vaga
+          </button>
+          <button
+            id="vaga-m"
+            type="button"
+            onClick={() => openDayModal(firstOpenRow.dateKey)}
+          >
+            Resolver vaga
+          </button>
+        </div>
+      )}
+
+      <div className="p-2.5 sm:p-4 md:p-5">
+        <div className="mb-2 grid grid-cols-7 gap-1.5 text-center sm:gap-2 md:mb-3 md:gap-2.5">
+          {WEEKDAYS_HEADER.map((w) => (
+            <div
+              key={w}
+              className="py-1 text-[11px] font-semibold tracking-[0.04em] text-muted-foreground uppercase md:text-xs"
+            >
+              {w}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 md:gap-2.5">
+          {calendarCells.map((cell, index) => {
+            if (!cell) {
+              return <div key={`empty-${index}`} className="min-h-[82px] sm:min-h-[108px] md:min-h-[128px]" />
+            }
+
+            const { day, dateKey: dk, dayRows } = cell
+            const dayStr = String(day).padStart(2, '0')
+            const hasService = dayRows.length > 0
+
+            if (!hasService) {
+              return (
+                <div
+                  key={dk}
+                  className="flex min-h-[82px] flex-col rounded-xl bg-table-head/90 p-2 text-muted-foreground/70 sm:min-h-[108px] sm:rounded-2xl sm:p-2.5 md:min-h-[128px] md:p-3"
                 >
-                  {column.label}
-                </th>
-              ))}
-              <th scope="col" className="w-12 border-b border-border">
-                <span className="sr-only">Trava</span>
-              </th>
-            </tr>
-          </thead>
+                  <span className="tabular text-xs font-medium md:text-sm">{dayStr}</span>
+                </div>
+              )
+            }
 
-          <tbody>
-            {rows.map((row) =>
-              row.exception ? (
-                <tr key={row.entryId} className="stripes">
-                  <td className="border-b border-divider px-5 py-4 align-middle">
-                    <CultoLabel row={row} />
-                  </td>
-                  <td
-                    colSpan={columns.length + 2}
-                    className="border-b border-divider px-3 py-4 text-subtle"
-                  >
-                    <ExceptionText exception={row.exception} />
-                  </td>
-                </tr>
-              ) : (
-                <tr key={row.entryId} className="group/row">
-                  <td className="border-b border-divider px-5 py-3.5 align-middle whitespace-nowrap">
-                    <CultoLabel row={row} />
-                  </td>
-                  <td className="border-b border-divider px-3 py-3.5 whitespace-nowrap">
-                    {row.teamName && <TeamChip name={row.teamName} color={row.teamColor} />}
-                  </td>
+            const firstRow = dayRows[0]
+            const exception = firstRow.exception
+            const isSelected = selectedDateKey === dk
 
-                  {row.cells.map((cell) => (
-                    <td
-                      key={cell.key}
-                      className="group/cell relative border-b border-divider py-2.5 pr-9 pl-3"
+            const vagasNoDia = dayRows.reduce(
+              (acc, r) =>
+                acc + r.cells.reduce((cAcc, c) => cAcc + c.items.filter((i) => !i.memberId).length, 0),
+              0,
+            )
+
+            const pessoasNoCulto = firstRow.cells.reduce(
+              (acc, c) => acc + c.items.filter((i) => i.memberId).length,
+              0,
+            )
+
+            const temTrava = dayRows.some(
+              (r) => r.locked || r.cells.some((c) => c.items.some((i) => i.locked)),
+            )
+
+            if (exception) {
+              return (
+                <button
+                  key={dk}
+                  type="button"
+                  onClick={() => openDayModal(dk, 0)}
+                  className={cn(
+                    'stripes group flex min-h-[82px] cursor-pointer flex-col items-start justify-between rounded-xl border border-border p-2 text-left transition-all hover:border-foreground/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:min-h-[108px] sm:rounded-2xl sm:p-2.5 md:min-h-[128px] md:p-3',
+                    isSelected && 'ring-2 ring-foreground',
+                  )}
+                >
+                  <span className="tabular text-sm font-bold text-foreground md:text-base">
+                    {dayStr}
+                  </span>
+
+                  <div className="mt-1 flex w-full flex-col gap-1">
+                    <span className="inline-flex max-w-full items-center self-start truncate rounded-full border border-border bg-card px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.03em] text-subtle uppercase md:px-2 md:text-[10px]">
+                      {exception.kind}
+                    </span>
+                    {exception.label && (
+                      <span className="line-clamp-2 text-[11px] leading-tight font-semibold text-foreground md:text-xs">
+                        {exception.label}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              )
+            }
+
+            return (
+              <button
+                key={dk}
+                type="button"
+                onClick={() => openDayModal(dk, 0)}
+                style={teamStyle(firstRow.teamColor)}
+                className={cn(
+                  'team-tint group flex min-h-[82px] cursor-pointer flex-col justify-between rounded-xl border p-2 text-left transition-all hover:border-foreground/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:min-h-[108px] sm:rounded-2xl sm:p-2.5 md:min-h-[128px] md:p-3',
+                  isSelected && 'border-foreground ring-1 ring-foreground',
+                )}
+              >
+                <div className="flex w-full items-center justify-between gap-1">
+                  <span className="tabular text-sm font-bold text-foreground md:text-base">
+                    {dayStr}
+                  </span>
+                  {temTrava && (
+                    <Lock className="size-3 shrink-0 text-muted-foreground" aria-label="Com trava" />
+                  )}
+                </div>
+
+                <div className="my-1 flex w-full flex-col gap-1">
+                  {dayRows.map((r) => (
+                    <span
+                      key={r.entryId}
+                      style={teamStyle(r.teamColor)}
+                      className="team-pill flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold md:rounded-lg md:px-2 md:py-1 md:text-xs"
                     >
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {cell.items.map((item) => (
-                          <CellButton
-                            key={item.assignmentId}
-                            id={item.assignmentId === firstOpenId ? 'vaga' : undefined}
-                            item={item}
-                            entryId={row.entryId}
-                            dateKey={row.dateKey}
-                            {...cellProps}
-                          />
-                        ))}
-                        <AddButton
-                          roles={cell.roles}
-                          entryId={row.entryId}
-                          dateKey={row.dateKey}
-                          taken={row.cells.flatMap((c) => c.items.map((i) => i.memberId))}
-                          className="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100"
-                          {...cellProps}
-                        />
-                      </div>
-                    </td>
+                      <TeamDot color={r.teamColor} className="size-1.5 rounded-[2px] md:size-2" />
+                      <span className="truncate">
+                        {r.slot === 'Culto de quarta' ? 'Noite' : r.slot}
+                      </span>
+                    </span>
                   ))}
+                </div>
 
-                  <td className="border-b border-divider pr-3 text-right">
-                    <RowLock
-                      row={row}
-                      onAction={run}
-                      className={cn(
-                        'size-9',
-                        !row.locked && 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
-                      )}
-                    />
-                  </td>
-                </tr>
-              ),
-            )}
-          </tbody>
-        </table>
+                <div className="mt-auto w-full pt-0.5">
+                  {vagasNoDia > 0 ? (
+                    <span className="block truncate text-[10px] font-semibold text-destructive md:text-xs">
+                      {vagasNoDia} {vagasNoDia === 1 ? 'vaga em aberto' : 'vagas em aberto'}
+                    </span>
+                  ) : (
+                    <span className="block truncate text-[10px] text-muted-foreground md:text-xs">
+                      {pessoasNoCulto} {pessoasNoCulto === 1 ? 'pessoa' : 'pessoas'}
+                    </span>
+                  )}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3 md:hidden">
-        {rows.map((row) =>
-          row.exception ? (
-            <article
-              key={row.entryId}
-              className="stripes flex items-center gap-3 rounded-card border border-border px-4 py-3.5"
-            >
-              <CultoLabel row={row} />
-              <ExceptionText exception={row.exception} />
-            </article>
-          ) : (
-            <article
-              key={row.entryId}
-              className="overflow-hidden rounded-card border border-border bg-card"
-            >
-              <div className="flex items-center gap-3 border-b border-divider py-2 pr-1 pl-4">
-                <DayBadge row={row} />
-                <span className="flex-1 text-[15px] font-semibold">{row.slot}</span>
-                {row.teamName && <TeamChip name={row.teamName} color={row.teamColor} />}
-                <RowLock row={row} onAction={run} className="size-11" />
+      <Dialog
+        open={selectedDateKey !== null && currentRow !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDateKey(null)
+        }}
+      >
+        {currentRow && (
+          <DialogContent
+            showCloseButton={false}
+            className="max-h-[90dvh] gap-0 overflow-y-auto rounded-[24px] border border-border bg-card p-0 sm:max-w-[460px]"
+          >
+            <DialogHeader className="border-b border-divider px-5 pt-5 pb-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-eyebrow">dia selecionado</span>
+                  <DialogTitle className="text-xl font-bold tracking-[-0.02em] md:text-2xl">
+                    {WEEKDAY_LONG[currentRow.weekday] ?? currentRow.weekday},{' '}
+                    {Number(currentRow.dayOfMonth)} de {monthName(month)}
+                  </DialogTitle>
+                </div>
+
+                {!currentRow.exception && (
+                  <RowLock row={currentRow} onAction={run} className="size-9" />
+                )}
               </div>
 
-              <div className="px-4 pt-1 pb-2">
-                {row.cells.map((cell) => (
+              <DialogDescription className="sr-only">
+                Integrantes escalados por função para este culto.
+              </DialogDescription>
+
+              {selectedRows.length > 1 && !currentRow.exception && (
+                <div
+                  role="tablist"
+                  aria-label="Escolher culto do dia"
+                  className="mt-2 inline-flex self-start rounded-full bg-secondary p-1"
+                >
+                  {selectedRows.map((r, idx) => {
+                    const active = idx === activeEntryIdx
+                    return (
+                      <button
+                        key={r.entryId}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setActiveEntryIdx(idx)}
+                        className={cn(
+                          'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                          active
+                            ? 'bg-card text-foreground shadow-xs'
+                            : 'text-muted-foreground hover:text-foreground',
+                        )}
+                      >
+                        {r.slot}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {!currentRow.exception && (
+                <div className="mt-2 flex flex-wrap items-center gap-2.5">
+                  {currentRow.teamName && (
+                    <TeamChip name={currentRow.teamName} color={currentRow.teamColor} />
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {currentRow.slot === 'Manhã'
+                      ? 'Culto da manhã'
+                      : currentRow.slot === 'Noite'
+                        ? 'Culto da noite'
+                        : currentRow.slot}
+                  </span>
+                </div>
+              )}
+            </DialogHeader>
+
+            {currentRow.exception ? (
+              <div className="px-5 py-6">
+                <ExceptionText exception={currentRow.exception} />
+              </div>
+            ) : (
+              <div className="divide-y divide-divider px-5 py-1">
+                {currentRow.cells.map((cell) => (
                   <div
                     key={cell.key}
-                    className="flex min-h-11 items-center gap-3 border-b border-background last:border-0"
+                    className="flex min-h-12 items-center justify-between gap-3 py-2.5"
                   >
-                    <span className="w-[108px] shrink-0 text-[13px] text-muted-foreground">
+                    <span className="w-[110px] shrink-0 text-[13px] text-muted-foreground">
                       {cell.label}
                     </span>
-                    <div className="flex flex-1 flex-wrap items-center gap-1.5 py-1.5">
+
+                    <div className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
                       {cell.items.map((item) => (
                         <CellButton
                           key={item.assignmentId}
-                          id={item.assignmentId === firstOpenId ? 'vaga-m' : undefined}
                           item={item}
-                          entryId={row.entryId}
-                          dateKey={row.dateKey}
+                          entryId={currentRow.entryId}
+                          dateKey={currentRow.dateKey}
                           {...cellProps}
                         />
                       ))}
                       <AddButton
                         roles={cell.roles}
-                        entryId={row.entryId}
-                        dateKey={row.dateKey}
-                        taken={row.cells.flatMap((c) => c.items.map((i) => i.memberId))}
+                        entryId={currentRow.entryId}
+                        dateKey={currentRow.dateKey}
+                        taken={currentRow.cells.flatMap((c) => c.items.map((i) => i.memberId))}
                         {...cellProps}
                       />
                     </div>
                   </div>
                 ))}
               </div>
-            </article>
-          ),
+            )}
+
+            <div className="border-t border-divider px-5 py-4">
+              <DialogClose
+                render={
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full rounded-full bg-tray hover:bg-secondary"
+                  />
+                }
+              >
+                Fechar
+              </DialogClose>
+            </div>
+          </DialogContent>
         )}
-      </div>
-    </div>
-  )
-}
-
-function DayBadge({ row }: { row: TableRow }) {
-  return (
-    <div className="flex w-11 shrink-0 flex-col text-center">
-      <span className="text-[11px] font-semibold text-muted-foreground">{row.weekday}</span>
-      <span className="tabular text-xl leading-tight font-semibold">{row.dayOfMonth}</span>
-    </div>
-  )
-}
-
-function CultoLabel({ row }: { row: TableRow }) {
-  return (
-    <div className="flex items-center gap-3">
-      <DayBadge row={row} />
-      <span className="hidden text-subtle md:inline">{row.slot}</span>
+      </Dialog>
     </div>
   )
 }
@@ -281,11 +496,11 @@ function RowLock({
     <button
       type="button"
       onClick={() => onAction(() => toggleEntryLockAction(row.entryId))}
-      title={row.locked ? 'Destravar linha' : 'Travar linha'}
-      aria-label={row.locked ? 'Destravar linha' : 'Travar linha'}
+      title={row.locked ? 'Destravar culto' : 'Travar culto'}
+      aria-label={row.locked ? 'Destravar culto' : 'Travar culto'}
       aria-pressed={row.locked}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-[10px] transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        'inline-flex shrink-0 items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         row.locked
           ? 'text-foreground hover:bg-secondary'
           : 'text-faint hover:bg-secondary hover:text-foreground',
@@ -325,10 +540,10 @@ function CellButton({
       <PopoverTrigger
         id={id}
         className={cn(
-          'inline-flex min-h-8 cursor-pointer scroll-mt-24 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'inline-flex min-h-8 cursor-pointer scroll-mt-24 items-center gap-1.5 rounded-full border text-[13px] whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           vago
-            ? 'border-dashed border-danger-strong bg-danger-soft font-semibold text-destructive hover:bg-danger-border/40'
-            : 'border-border bg-card font-medium text-foreground hover:border-rule-strong aria-expanded:border-rule-strong',
+            ? 'border-dashed border-danger-strong bg-danger-soft px-3 font-semibold text-destructive hover:bg-danger-border/40'
+            : 'border-border bg-card py-0.5 pr-2.5 pl-1 font-medium text-foreground hover:border-rule-strong aria-expanded:border-rule-strong',
         )}
       >
         {vago ? (
@@ -338,6 +553,12 @@ function CellButton({
           </>
         ) : (
           <>
+            <span
+              aria-hidden
+              className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-subtle"
+            >
+              {iniciais(item.name)}
+            </span>
             {item.name}
             {item.isGestor && (
               <span className="rounded-full bg-gestor-soft px-1.5 py-px text-[11px] font-semibold text-gestor-foreground">
@@ -454,7 +675,7 @@ function AddButton({
         aria-label="Adicionar integrante"
         title="Adicionar integrante"
         className={cn(
-          'inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-dashed border-input text-muted-foreground transition hover:border-rule-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-dashed border-input text-muted-foreground transition hover:border-rule-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           className,
         )}
       >
