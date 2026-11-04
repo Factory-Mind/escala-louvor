@@ -22,7 +22,7 @@ export function LoginForm({ next }: { next: string }) {
         </Label>
         <div
           className={cn(
-            'flex items-center rounded-xl border border-input bg-card pr-1 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20',
+            'flex items-center rounded-full border border-input bg-card pr-1.5 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20',
             state.error && 'border-destructive',
           )}
         >
@@ -36,14 +36,14 @@ export function LoginForm({ next }: { next: string }) {
             placeholder="••••••••"
             aria-invalid={state.error ? true : undefined}
             aria-describedby={state.error ? 'password-error' : undefined}
-            className="min-h-12 min-w-0 flex-1 rounded-xl bg-transparent px-3.5 text-base outline-none placeholder:text-faint"
+            className="min-h-12 min-w-0 flex-1 rounded-full bg-transparent px-4 text-base outline-none placeholder:text-faint"
           />
           <button
             type="button"
             onClick={() => setVisivel((v) => !v)}
             aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'}
             aria-pressed={visivel}
-            className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             {visivel ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
           </button>
@@ -56,7 +56,12 @@ export function LoginForm({ next }: { next: string }) {
         )}
       </div>
 
-      <Button type="submit" size="lg" disabled={pending} className="h-12 rounded-xl text-base">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending}
+        className="h-12 rounded-full bg-primary text-base text-primary-foreground hover:bg-primary/90"
+      >
         {pending ? 'Entrando…' : 'Entrar'}
       </Button>
     </form>

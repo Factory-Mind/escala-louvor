@@ -21,35 +21,44 @@ export default async function LoginPage({
   const { next } = await searchParams
 
   return (
-    <div className="flex min-h-dvh flex-col bg-card md:flex-row md:bg-background">
-      <section className="flex flex-col gap-6 rounded-b-[28px] bg-primary px-6 pt-12 pb-8 text-primary-foreground md:flex-1 md:justify-between md:gap-12 md:rounded-none md:p-12">
-        <div className="flex items-center gap-2.5 md:gap-3">
-          <span className="flex size-10 items-center justify-center rounded-[11px] bg-primary-foreground text-[15px] font-semibold text-primary">
+    <div className="flex min-h-dvh flex-col bg-background p-3.5 md:flex-row md:p-4">
+      <section className="relative flex flex-col gap-6 overflow-hidden rounded-[28px] bg-brand-strong px-6 pt-10 pb-8 text-brand-foreground md:flex-1 md:justify-between md:gap-12 md:rounded-[32px] md:p-12">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-24 size-[380px] rounded-full border border-brand-foreground/8"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-36 -left-36 size-[520px] rounded-full border border-brand-foreground/8"
+        />
+
+        <div className="relative flex items-center gap-2.5 md:gap-3">
+          <span className="flex size-10 items-center justify-center rounded-full bg-brand-foreground/12 text-[15px] font-semibold text-brand-foreground">
             EL
           </span>
           <span className="text-base font-semibold">Escala de Louvor</span>
         </div>
 
-        <div className="flex max-w-[460px] flex-col gap-5">
-          <p className="text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] md:text-[40px] md:leading-[1.1] md:tracking-[-0.03em]">
+        <div className="relative flex max-w-[460px] flex-col gap-5">
+          <p className="text-[30px] leading-[1.12] font-bold tracking-[-0.025em] md:text-[42px] md:leading-[1.08] md:tracking-[-0.03em]">
             A escala do mês, pronta em minutos.
           </p>
-          <p className="hidden text-[17px] leading-normal text-primary-foreground/75 md:block">
+          <p className="hidden text-[17px] leading-normal text-brand-foreground/80 md:block">
             Rodízio dos times, ausências de cada um e a planilha para mandar no grupo.
           </p>
-          <ul aria-hidden className="mt-2 hidden flex-col gap-2 md:flex">
+          <ul aria-hidden className="mt-2 hidden flex-col gap-2.5 md:flex">
             {EXEMPLOS.map((item) => (
               <li
                 key={item.day}
-                className="flex items-center gap-3 rounded-xl bg-primary-foreground/10 px-3.5 py-3"
+                className="flex items-center gap-3 rounded-2xl bg-card/45 px-4 py-3 backdrop-blur-xs"
               >
                 <span className="flex w-10 flex-col text-center">
-                  <span className="text-[11px] font-semibold text-primary-foreground/60">
+                  <span className="text-[11px] font-semibold text-brand-foreground/65">
                     {item.weekday}
                   </span>
-                  <span className="text-lg font-semibold">{item.day}</span>
+                  <span className="text-lg font-bold">{item.day}</span>
                 </span>
-                <span className="flex-1 text-[15px]">{item.culto}</span>
+                <span className="flex-1 text-[15px] font-medium">{item.culto}</span>
                 <span
                   className="team-chip rounded-full px-2.5 py-0.5 text-xs font-semibold"
                   style={teamStyle(item.cor)}
@@ -64,7 +73,7 @@ export default async function LoginPage({
         <span className="hidden md:block" />
       </section>
 
-      <main className="flex flex-1 justify-center px-6 pt-8 pb-10 md:items-center md:py-12">
+      <main className="flex flex-1 justify-center px-3 pt-8 pb-10 md:items-center md:px-6 md:py-12">
         <div className="flex w-full max-w-[380px] flex-col gap-6 md:gap-7">
           <div className="flex flex-col gap-1.5 md:gap-2">
             <h1 className="text-2xl font-semibold tracking-[-0.02em] md:text-[30px]">Entrar</h1>
