@@ -161,7 +161,7 @@ export function AvailabilityBoard({ caption, days, groups, unavailable }: Props)
 
       <section className="hidden overflow-hidden rounded-card border border-border bg-card md:block">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-divider px-5 py-4">
-          <div className="flex min-h-11 w-[340px] items-center gap-2 rounded-[10px] border border-input bg-card px-3.5">
+          <div className="flex min-h-11 w-[340px] items-center gap-2 rounded-full border border-input bg-card px-4">
             <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <input
               value={busca}
@@ -179,7 +179,7 @@ export function AvailabilityBoard({ caption, days, groups, unavailable }: Props)
             <button
               type="button"
               onClick={alternarTodos}
-              className="flex min-h-10 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3 text-sm text-foreground hover:border-rule-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="flex min-h-10 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm text-foreground hover:border-rule-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               {todosRecolhidos ? (
                 <ChevronsUpDown className="size-4" />

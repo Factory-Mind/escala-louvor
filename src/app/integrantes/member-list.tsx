@@ -85,8 +85,8 @@ export function MemberList({ members }: { members: GeneratorMember[] }) {
           </Button>
         }
       >
-        <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-          <div className="flex min-h-11 items-center gap-2 rounded-xl bg-background px-3 md:w-[340px] md:rounded-[10px] md:border md:border-input md:bg-card md:px-3.5">
+        <div className="flex flex-col gap-3">
+          <div className="flex min-h-11 items-center gap-2 rounded-full border border-input bg-card px-4 md:w-[360px]">
             <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <input
               value={busca}
@@ -210,7 +210,7 @@ export function MemberList({ members }: { members: GeneratorMember[] }) {
         type="button"
         aria-label="Novo integrante"
         onClick={() => setNovoAberto(true)}
-        className="fixed right-4 bottom-24 z-30 flex size-14 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(16,24,40,0.2)] md:hidden"
+        className="fixed right-4 bottom-24 z-30 flex size-14 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-[0_6px_16px_rgba(38,35,30,0.18)] md:hidden"
       >
         <Plus className="size-[22px]" />
       </button>

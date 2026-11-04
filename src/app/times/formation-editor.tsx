@@ -94,10 +94,10 @@ export function FormationEditor({
                     </span>
                   </div>
 
-                  <div className="flex items-center rounded-[10px] border border-border">
+                  <div className="flex items-center rounded-full border border-border bg-card">
                     <button
                       type="button"
-                      className="flex size-11 items-center justify-center rounded-l-[10px] hover:bg-secondary disabled:opacity-40 md:size-10"
+                      className="flex size-10 items-center justify-center rounded-l-full hover:bg-secondary disabled:opacity-40 md:size-9"
                       aria-label={`Menos um em ${ROLE_SHORT_LABELS[role]}`}
                       disabled={count === 0}
                       onClick={() => mudar(role, count - 1)}
@@ -112,7 +112,7 @@ export function FormationEditor({
                     </span>
                     <button
                       type="button"
-                      className="flex size-11 items-center justify-center rounded-r-[10px] hover:bg-secondary disabled:opacity-40 md:size-10"
+                      className="flex size-10 items-center justify-center rounded-r-full hover:bg-secondary disabled:opacity-40 md:size-9"
                       aria-label={`Mais um em ${ROLE_SHORT_LABELS[role]}`}
                       disabled={count === 6}
                       onClick={() => mudar(role, count + 1)}
