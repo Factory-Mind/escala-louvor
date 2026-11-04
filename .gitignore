@@ -53,3 +53,5 @@ next-env.d.ts
 .agents
 .vitest
 skills-lock.json
+/Redesign Escala.pdf
+/*.pdf
