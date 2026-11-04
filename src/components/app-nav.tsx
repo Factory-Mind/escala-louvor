@@ -79,7 +79,7 @@ export function AppNav({
   }
 
   const itemClass =
-    'flex min-h-11 items-center gap-3 rounded-[10px] text-[15px] transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+    'flex min-h-12 items-center gap-3 rounded-2xl text-[15px] transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
 
   return (
     <>
@@ -87,13 +87,13 @@ export function AppNav({
         id="menu-principal"
         aria-label="Menu principal"
         className={cn(
-          'sticky top-0 hidden h-dvh shrink-0 flex-col gap-1 overflow-hidden border-r border-sidebar-border bg-sidebar py-6 transition-[width] duration-200 md:flex',
-          collapsed ? 'w-[76px] px-3' : 'w-[248px] px-4',
+          'sticky top-0 hidden h-dvh shrink-0 flex-col gap-2 overflow-hidden bg-sidebar py-4 transition-[width] duration-200 md:top-4 md:h-[calc(100dvh-2rem)] lg:top-5 lg:h-[calc(100dvh-2.5rem)] md:flex',
+          collapsed ? 'w-[76px] pr-3 pl-1' : 'w-[244px] pr-4 pl-1',
         )}
       >
-        <div className={cn('flex items-center gap-2 pt-1 pb-6', collapsed ? 'flex-col' : 'justify-between px-2')}>
+        <div className={cn('flex items-center gap-2 pt-1 pb-5', collapsed ? 'flex-col' : 'justify-between px-2')}>
           <Link href="/" aria-label="Escala de Louvor" className="flex min-w-0 items-center gap-2.5 rounded-xl">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-sm font-semibold text-primary-foreground">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
               EL
             </span>
             {!collapsed && (
@@ -111,7 +111,7 @@ export function AppNav({
                 aria-expanded={!collapsed}
                 aria-controls="menu-principal"
                 aria-label={collapsed ? 'Abrir menu' : 'Recolher menu'}
-                className="flex size-11 shrink-0 items-center justify-center rounded-[10px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 {collapsed ? (
                   <PanelLeftOpen className="size-[18px]" aria-hidden />
@@ -123,7 +123,7 @@ export function AppNav({
           />
         </div>
 
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-2">
           {links.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
 
@@ -139,10 +139,10 @@ export function AppNav({
                       aria-label={collapsed ? label : undefined}
                       className={cn(
                         itemClass,
-                        collapsed ? 'justify-center px-0' : 'px-3',
+                        collapsed ? 'justify-center px-0' : 'px-4',
                         active
                           ? 'bg-sidebar-primary font-medium text-sidebar-primary-foreground'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                          : 'bg-sidebar-item text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                       )}
                     >
                       <Icon className="size-[18px] shrink-0" aria-hidden />
@@ -155,7 +155,7 @@ export function AppNav({
           })}
         </ul>
 
-        <form action={logoutAction} className="mt-auto border-t border-sidebar-border pt-4">
+        <form action={logoutAction} className="mt-auto pt-4">
           <CollapsedTooltip
             collapsed={collapsed}
             label="Sair"
@@ -165,8 +165,8 @@ export function AppNav({
                 aria-label={collapsed ? 'Sair' : undefined}
                 className={cn(
                   itemClass,
-                  'w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                  collapsed ? 'justify-center px-0' : 'px-3',
+                  'w-full bg-sidebar-item text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  collapsed ? 'justify-center px-0' : 'px-4',
                 )}
               >
                 <LogOut className="size-[18px] shrink-0" aria-hidden />
@@ -179,7 +179,7 @@ export function AppNav({
 
       <nav
         aria-label="Navegação"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-sidebar-border bg-sidebar px-1 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 flex rounded-[24px] border border-border bg-card px-2 py-1.5 shadow-sm pb-[max(env(safe-area-inset-bottom),0.375rem)] md:hidden"
       >
         {links.map(({ href, short, icon: Icon }) => {
           const active = pathname === href

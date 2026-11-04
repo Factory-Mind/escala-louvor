@@ -62,7 +62,7 @@ export function ExceptionsPanel({ exceptions, days, className }: Props) {
     <Dialog>
       <DialogTrigger
         className={cn(
-          'inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-dashed border-rule-strong bg-card px-3.5 text-sm font-medium text-foreground transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+          'inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-dashed border-rule-strong bg-card px-4 text-sm font-medium text-foreground transition-colors hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           className,
         )}
       >

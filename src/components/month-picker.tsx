@@ -13,15 +13,15 @@ export function MonthPicker({ year, month }: { year: number; month: number }) {
   }
 
   const seta =
-    'flex size-10 shrink-0 items-center justify-center rounded-[10px] text-foreground transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:size-11 md:border md:border-border md:bg-card md:hover:border-rule-strong md:hover:bg-card'
+    'flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:border-rule-strong hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:size-10'
 
   return (
-    <div className="-ml-2.5 flex items-center gap-1 md:ml-0 md:gap-2">
+    <div className="flex items-center gap-2 md:gap-3">
       <button type="button" className={seta} onClick={() => go(-1)} aria-label="Mês anterior">
         <ChevronLeft className="size-[18px]" />
       </button>
 
-      <h1 className="text-[22px] font-semibold tracking-[-0.02em] capitalize md:mx-2 md:text-[32px] md:leading-tight">
+      <h1 className="text-[24px] font-bold tracking-[-0.025em] capitalize md:mx-1 md:text-[38px] md:leading-tight">
         {monthName(month)} {year}
       </h1>
 
